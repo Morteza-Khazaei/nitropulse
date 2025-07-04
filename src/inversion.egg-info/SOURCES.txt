@@ -4,7 +4,9 @@ pyproject.toml
 setup.cfg
 setup.py
 src/inversion/__init__.py
-src/inversion/core.py
+src/inversion/inverse.py
+src/inversion/pheno.py
+src/inversion/radar.py
 src/inversion/risma.py
 src/inversion.egg-info/PKG-INFO
 src/inversion.egg-info/SOURCES.txt

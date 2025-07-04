@@ -134,7 +134,7 @@ class Inverse:
         rvis = []
 
         for idx, row in df_x.iterrows():
-            print(idx)
+            # print(idx)
             vv = self.to_power(row['VV'])
             vh = self.to_power(row['VH'])
             rvi = (4 * vh) / (vh + vv)
