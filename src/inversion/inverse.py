@@ -142,7 +142,7 @@ class Inverse:
             ssm = row['SSM']
             sst = row['SST']
             bbch = row['BBCH']
-            croptype = row['lc']
+            croptype = str(int(row['lc']))
             sand = row['Sand']
             silt = row['Silt']
             clay = row['Clay']

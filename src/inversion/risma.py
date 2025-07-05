@@ -10,14 +10,20 @@ class RismaData:
     """
     Class to handle Risma soil data processing.
     """
-    def __init__(self, risma_dir):
+    def __init__(self, workspace_dir, risma_dir, ):
         """
         Initialize the RismaData class.
         """
-        self.risma_dir = risma_dir
+        self.risma_dir = os.path.join(workspace_dir, risma_dir)
         self.df_texture = self.load_stations_texture(depth=5)
     
-
+    def download_risma_data(self,):
+        """
+        Download the Risma soil data from the specified directory.
+        This method is a placeholder for downloading data if needed.
+        """
+        print("Downloading Risma data is not implemented yet.")
+        pass
     
     def load_df(self, depth='0 to 5 cm'):
         """        Load the Risma soil data from CSV files in the specified directory.
@@ -304,3 +310,15 @@ class RismaData:
         df_melted = df_melted.merge(df_stats_sst, left_index=True, right_index=True, how='left')
 
         return df_melted
+
+
+if __name__ == "__main__":
+    # Example usage
+    workspace_dir = './data'
+    risma_dir = 'RISMA_CSV_SSM_SST_AirT_2015_2023'
+    
+    risma_data = RismaData(workspace_dir, risma_dir)
+    df_risma = risma_data.load_df()
+    
+    print(df_risma.head())
+    print("Risma data loaded successfully.")

@@ -10,14 +10,14 @@ class BBCH:
     """
     class to calculate BBCH stages based on cumulative soil GDD and SST.
     """
-    def __init__(self, risma_dir, s1_dir, crop_gdd_thresholds=None):
+    def __init__(self, workspace_dir, risma_dir, s1_dir, crop_gdd_thresholds=None, auto_download=False):
         """
         Initialize the Inverse class.
         """
-        risma = RismaData(risma_dir)
+        risma = RismaData(workspace_dir, risma_dir)
         self.df_risma = risma.load_df()
 
-        s1 = S1Data(s1_dir)
+        s1 = S1Data(workspace_dir, s1_dir, auto_download)
         self.df_S1 = s1.load_df()
 
         self.crop_gdd_thresholds = crop_gdd_thresholds
