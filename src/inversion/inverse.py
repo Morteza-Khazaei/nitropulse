@@ -1,3 +1,5 @@
+import os
+import json
 import numpy as np
 from scipy.optimize import least_squares
 from scipy.interpolate import interp1d
@@ -15,19 +17,31 @@ class Inverse:
     Class to handle inversion data processing.
     """
 
-    def __init__(self, fGHz, models, acftype='exp', crop_bbch_k_b_coff=None):
+    def __init__(self, workspace_dir, fGHz, models, acftype='exp'):
         """
         Initialize the Inverse class with directories and crop GDD thresholds.
         """
         self.fGHz = fGHz
         self.models = models
         self.acftype = acftype
+
+        # Load it back as a dict
+        crop_bbch_k_b_coff_file = os.path.join(workspace_dir, 'config', 'gdd', 'crop_bbch_k_b_coff.json')
+        with open(crop_bbch_k_b_coff_file, "r") as f:
+            crop_bbch_k_b_coff = json.load(f)
         self.crop_bbch_k_b_coff = crop_bbch_k_b_coff
+        
+        # Load crop bounds from the JSON file
+        crop_bounds_file = os.path.join(workspace_dir, 'config', 'inversion', 'crop_inversion_bounds.json')
+        with open(crop_bounds_file, "r") as f:
+            crop_inversion_bounds = json.load(f)
+        self.crop_inversion_bounds = crop_inversion_bounds
 
 
-    def run(self, df, crop_bounds):
+
+    def run(self, df):
         # Implementation of the run method will go here
-        df = df.groupby(['op', 'year', 'doy', 'angle'], group_keys=False).apply(lambda x: self.inversion(x, crop_bounds))
+        df = df.groupby(['op', 'year', 'doy', 'angle'], group_keys=False).apply(lambda x: self.inversion(x, self.crop_inversion_bounds))
 
         # drop na
         df.dropna(inplace=True)

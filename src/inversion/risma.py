@@ -10,10 +10,21 @@ class RismaData:
     """
     Class to handle Risma soil data processing.
     """
-    def __init__(self, workspace_dir, risma_dir, ):
+    def __init__(self, workspace_dir):
         """
         Initialize the RismaData class.
         """
+        # Automatically find the RISMA_CSV folder in the workspace directory
+        workspace_dir = os.path.join(workspace_dir, 'inputs')
+        risma_dir = None
+        for folder in os.listdir(workspace_dir):
+            if os.path.isdir(os.path.join(workspace_dir, folder)) and 'RISMA_CSV' in folder:
+                print(f"Found RISMA_CSV folder: {folder}")
+                risma_dir = folder
+                break
+            else:
+                raise FileNotFoundError(f"No folder containing 'RISMA_CSV' found in {workspace_dir}.")
+        
         self.risma_dir = os.path.join(workspace_dir, risma_dir)
         self.df_texture = self.load_stations_texture(depth=5)
     
@@ -39,11 +50,11 @@ class RismaData:
         list_of_dfs_risma_desc = []
 
         # Loop through each file in the directory
-        for filename in os.listdir(self.risma_dir):
+        for filename in sorted(os.listdir(self.risma_dir), key=lambda x:int(x.split('_')[1][2:])):
             if filename.endswith(".csv"):  # Check if the file is a CSV file
                 station_name = filename.split('_')[1]
                 filepath = os.path.join(self.risma_dir, filename)
-                print(f"Processing file: {filename}")
+                print(f"\tProcessing file: {filename}")
                 df_RISMA_asc = self.read_risma_bulk_csv(filepath, station_name, S1_lot='18:30')
                 df_RISMA_desc = self.read_risma_bulk_csv(filepath, station_name, S1_lot='06:30')
 
@@ -75,14 +86,14 @@ class RismaData:
         # Interpolate mean_airt and mean_sst
         df_RISMA['mean_airt'] = df_RISMA['mean_airt'].interpolate()
         df_RISMA['mean_sst'] = df_RISMA['mean_sst'].interpolate()
-
-        # Group the DataFrame by 'date' and 'station'
-        grouped = df_RISMA.groupby(['date', 'station', 'depth', 'op']).apply(lambda x: x)
-        
-        grouped['category'] = grouped.apply(self.categorize_sensor, axis=1)
+        df_RISMA['category'] = df_RISMA.apply(self.categorize_sensor, axis=1)
 
         # pivot the table
-        pivoted = grouped.pivot(index=['date', 'station', 'depth', 'op', 'mean_sst', 'mean_airt'], columns='category', values='value')
+        pivoted = df_RISMA.pivot(
+            index=['date', 'station', 'depth', 'op', 'mean_sst', 'mean_airt'], 
+            columns='category', 
+            values='value'
+        )
         pivoted.reset_index(inplace=True)
 
         # add year
@@ -314,10 +325,9 @@ class RismaData:
 
 if __name__ == "__main__":
     # Example usage
-    workspace_dir = './data'
-    risma_dir = 'RISMA_CSV_SSM_SST_AirT_2015_2023'
+    workspace_dir = './assets'
     
-    risma_data = RismaData(workspace_dir, risma_dir)
+    risma_data = RismaData(workspace_dir)
     df_risma = risma_data.load_df()
     
     print(df_risma.head())

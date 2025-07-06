@@ -1,3 +1,6 @@
+
+import os
+import json
 import pandas as pd
 from bisect import bisect_right
 
@@ -10,20 +13,30 @@ class BBCH:
     """
     class to calculate BBCH stages based on cumulative soil GDD and SST.
     """
-    def __init__(self, workspace_dir, risma_dir, s1_dir, crop_gdd_thresholds=None, auto_download=False):
+    def __init__(self, workspace_dir, auto_download=False):
         """
         Initialize the Inverse class.
         """
-        risma = RismaData(workspace_dir, risma_dir)
+        risma = RismaData(workspace_dir)
         self.df_risma = risma.load_df()
 
-        s1 = S1Data(workspace_dir, s1_dir, auto_download)
+        s1 = S1Data(workspace_dir, auto_download)
         self.df_S1 = s1.load_df()
 
+        # Load lc_base_temp from the JSON file
+        crop_base_temp_file = os.path.join(workspace_dir, 'config', 'gdd', 'crop_base_temp.json')
+        with open(crop_base_temp_file, 'r') as f:
+            crop_base_temp = json.load(f)
+        self.crop_base_temp = crop_base_temp
+
+        # Load crop_gdd_thresh from the JSON file
+        gdd_file = os.path.join(workspace_dir, 'config', 'gdd', 'crop_gdd_thresh.json')
+        with open(gdd_file, 'r') as f:
+            crop_gdd_thresholds = json.load(f)
         self.crop_gdd_thresholds = crop_gdd_thresholds
 
 
-    def run(self, lc_base_temp=None):
+    def run(self):
         
         # Merge 'grouped' and 'df_RISMA_asc' based on 'year' and 'doy'
         merged_df = pd.merge(self.df_risma, self.df_S1, on=['year', 'doy', 'op', 'station'], how='inner')
@@ -32,15 +45,26 @@ class BBCH:
         merged_df.dropna(subset=['VV', 'VH', 'angle'], inplace=True)
 
         # Create a new column 'BASE_TEMP' in merged_df
-        merged_df['BASE_TEMP'] = merged_df['lc'].map(lc_base_temp)
+        merged_df['BASE_TEMP'] = merged_df['lc'].map(self.crop_base_temp)
 
         #  Use interploate to fill Nan in SST
-        merged_df['SST'].interpolate(inplace=True)
+        merged_df['SST'] = merged_df['SST'].interpolate()
 
-        # Convert daily soil temperature series to yearly cumulative soil GDD.
-        merged_df['cum_GDD_air'] = merged_df.groupby(['year'], group_keys=False).apply(self.compute_cumulative_air_gdd)
-        merged_df['cum_GDD_soil'] = merged_df.groupby(['year'], group_keys=False).apply(self.compute_cumulative_soil_gdd)
+        # Calculate cumulative GDD for air and soil using vectorized groupby
+        merged_df['cum_GDD_air'] = (
+            (merged_df['mean_airt'] - merged_df['BASE_TEMP'])
+            .clip(lower=0)
+            .groupby(merged_df['year'])
+            .cumsum()
+        )
 
+        merged_df['cum_GDD_soil'] = (
+            (merged_df['mean_sst'] - merged_df['BASE_TEMP'])
+            .clip(lower=0)
+            .groupby(merged_df['year'])
+            .cumsum()
+        )
+        
         # add cum_GDD based on mean of GDD
         merged_df['cum_GDD'] = merged_df[['cum_GDD_air', 'cum_GDD_soil']].mean(axis=1)
 
@@ -48,24 +72,10 @@ class BBCH:
         merged_df['BBCH'] = merged_df.apply(lambda row: self.get_bbch_from_soil_gdd(row['lc'], row['cum_GDD'], row['SST'], row['BASE_TEMP']), axis=1)
 
         # Calculate the cumulative sum of SSM for each year
-        merged_df['cum_SSM'] = merged_df.groupby(['year'], group_keys=False)['SSM'].apply(lambda x: x.cumsum())
+        merged_df['cum_SSM'] = merged_df.groupby('year')['SSM'].cumsum()
 
         return merged_df
     
-
-    def compute_cumulative_soil_gdd(self, df):
-        """Convert daily soil temperature series to cumulative soil GDD."""
-        soil_temps = df['mean_sst']
-        base_temp = df['BASE_TEMP']
-        daily = (soil_temps - base_temp).clip(lower=0)
-        return daily.cumsum()
-
-    def compute_cumulative_air_gdd(self, df):
-        """Convert daily soil temperature series to cumulative soil GDD."""
-        air_temp = df['mean_airt']
-        base_temp = df['BASE_TEMP']
-        daily = (air_temp - base_temp).clip(lower=0)
-        return daily.cumsum()
 
     def get_bbch_from_soil_gdd(self, crop: str, cum_gdd: float, sst: float, base_temp: float) -> int:
         """

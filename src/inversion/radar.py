@@ -12,12 +12,22 @@ class S1Data:
     """
     Class to handle S1 soil data processing.
     """
-    def __init__(self, workspace_dir, s1_dir, auto_download=False):
+    def __init__(self, workspace_dir, auto_download=False):
         """
         Initialize the S1Data class.
         """
+        workspace_dir = os.path.join(workspace_dir, 'inputs')
+        s1_dir = None
+        for folder in os.listdir(workspace_dir):
+            if os.path.isdir(os.path.join(workspace_dir, folder)) and 'GEE_' in folder:
+                print(f"Found GEE folder: {folder}")
+                s1_dir = folder
+                break
+            # else:
+            #     raise FileNotFoundError(f"No folder containing 'GEE' found in {workspace_dir}.")
         self.workspace_dir = workspace_dir
         self.s1_dir = os.path.join(workspace_dir, s1_dir)
+        
         self.s1_google_drive_dir = s1_dir
         self.auto_download = auto_download
 
@@ -174,11 +184,11 @@ class S1Data:
         list_of_dfs = []
 
         # Loop through each file in the directory
-        for filename in os.listdir(self.s1_dir):
+        for filename in sorted(os.listdir(self.s1_dir), key=lambda x:int(x.split('_')[1][2:])):
             if filename.endswith(".csv"):  # Check if the file is a CSV file
                 station_name = filename.split('_')[1]
                 filepath = os.path.join(self.s1_dir, filename)
-                print(f"Processing file: {filename}")
+                print(f"\tProcessing file: {filename}")
                 df_S1 = self.read_S1_sigma_csv(filepath, station_name)
 
                 list_of_dfs.append(df_S1)
@@ -195,9 +205,7 @@ class S1Data:
         # Cast lc to int then str
         df_S1_cat['lc'] = df_S1_cat['lc'].astype(int).astype(str)
 
-        df_S1_cat_gp = df_S1_cat.groupby(['year', 'doy', 'op', 'station'], group_keys=False).apply(lambda x: x).reset_index(drop=True)
-
-        return df_S1_cat_gp
+        return df_S1_cat
 
 
     def read_S1_sigma_csv(self, fname, station):
@@ -236,9 +244,12 @@ class S1Data:
         indices = df_t[(df_t['band'] == 'doy') | (df_t['band'] == 'year')].index
         df_t.drop(indices, inplace=True)
 
-        # Groupby df_t based on orbitpass, year, and doy
-        gp_df = df_t.groupby(['op', 'year', 'doy']).apply(lambda x: x.set_index('band').drop(['op', 'year', 'doy'], axis=1).T).reset_index()
-
+        gp_df = df_t.pivot_table(
+            index=['op', 'year', 'doy'],
+            columns='band',
+            values=df_t.columns.difference(['op', 'year', 'doy', 'band'])[0]  # usually the value column
+        ).reset_index()
+        
         gp_df['station'] = station
 
         return gp_df
@@ -392,8 +403,8 @@ class S1Data:
 
 if __name__ == "__main__":
     # Example usage
-    s1 = S1Data(workspace_dir='./assets', s1_dir='inputs/GEE_Exports_S1_RISMA_with_data_20m', auto_download=True)
-    s1.download_S1_data(stations=['MB1', ], buffer_distance=20, start_date='2010-01-01', end_date='2024-01-01', gee_project_id='ee-mortezakhazaei1370', roi_asset_id='RISMA_Stations_Canada')
+    s1 = S1Data(workspace_dir='./assets', auto_download=True)
+    # s1.download_S1_data(stations=['MB1', ], buffer_distance=20, start_date='2010-01-01', end_date='2024-01-01', gee_project_id='ee-mortezakhazaei1370', roi_asset_id='RISMA_Stations_Canada')
     
-    # df = s1.load_df()
-    # print(df.head())
+    df = s1.load_df()
+    print(df.head())

@@ -25,3 +25,5 @@ dependencies = [
     "pandas>=2.2",
 
 ]
+[project.scripts]
+inversion = "inversion.core:cli"
