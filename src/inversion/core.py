@@ -8,15 +8,22 @@ from inversion.pheno import BBCH
 from inversion.inverse import Inverse
 
 
-@click.group()
+@click.group(context_settings=dict(help_option_names=['-h', '--help']))
 def cli():
-    """Inversion Data Processing CLI."""
+    """
+    A command-line interface for running SAR backscatter inversion models.
+
+    This tool orchestrates the data preparation, phenology modeling,
+    and final inversion steps to estimate soil and vegetation parameters
+    from Sentinel-1 radar data based on the ground-based soil surface parameters 
+    measurements from RISMA networks.
+    """
     pass
 
 
-@cli.command()
+@cli.command('run')
 @click.option('--workspace-dir', default='./assets', show_default=True, help='Workspace directory.')
-@click.option('--auto-download', is_flag=True, show_default=True, help='Auto download data from Google Drive.')
+@click.option('--auto-download', is_flag=True, show_default=True, help='Auto download Sentinel-1 data via Google Earth Engine.')
 @click.option('--stations', multiple=True, default=['MB1', 'MB2', 'MB3', 'MB4', 'MB5', 'MB6', 'MB7', 'MB8', 'MB9', 'MB10', 'MB11', 'MB12', 'MB13', 'MB14', 'MB15'], show_default=True, help='List of station IDs to process.')
 @click.option('--buffer-distance', default=15, show_default=True, help='Buffer distance for Sentinel-1 data in meters.')
 @click.option('--start-date', default='2010-01-01', show_default=True, help='Start date for Sentinel-1 data (YYYY-MM-DD).')
@@ -33,7 +40,21 @@ def run(
     stations, buffer_distance, start_date, end_date, gee_project_id, roi_asset_id, 
     fghz, models, acftype):
     """
-    Run the full inversion workflow.
+    Run the full inversion workflow from data download to result generation.
+
+    This command performs the following steps:\n
+    \b
+    \t1. Initializes data handlers for RISMA (ground-truth) and Sentinel-1 data.\n
+    \t2. Optionally downloads Sentinel-1 data from GEE for specified stations.\n
+    \t3. Runs a phenology model (BBCH) to determine crop growth stages.\n
+    \t4. Executes the core inversion algorithm using the prepared data.\n
+    \t5. Saves the final inverted parameters to a CSV file.
+
+    Example Usage:
+    \b
+        inversion run --workspace-dir ./data --auto-download \\
+        --stations MB1 MB2 --gee-project-id your-gcp-project
+
     """
     click.echo("🚀 Starting inversion workflow...")
     click.echo(f"Workspace: {workspace_dir}")
