@@ -60,7 +60,7 @@ class S1Data:
 
                     # Authenticate and get the service
                     print('Authenticating with Google Drive...')
-                    service = get_service(path=os.path.join(self.workspace_dir, 'gdrive'))
+                    service = get_service(path=os.path.join(self.workspace_dir, 'config', 'gdrive'))
 
                     # Create the folder in Google Drive if it doesn't exist
                     folder_id = create_folder(service, self.s1_google_drive_dir)
@@ -392,8 +392,8 @@ class S1Data:
 
 if __name__ == "__main__":
     # Example usage
-    s1 = S1Data(workspace_dir='./data', s1_dir='GEE_Exports_S1_RISMA_with_data_new', auto_download=True)
-    s1.download_S1_data(stations=['MB1', ], buffer_distance=15, start_date='2010-01-01', end_date='2024-01-01', gee_project_id='ee-mortezakhazaei1370', roi_asset_id='RISMA_Stations_Canada')
+    s1 = S1Data(workspace_dir='./assets', s1_dir='inputs/GEE_Exports_S1_RISMA_with_data_20m', auto_download=True)
+    s1.download_S1_data(stations=['MB1', ], buffer_distance=20, start_date='2010-01-01', end_date='2024-01-01', gee_project_id='ee-mortezakhazaei1370', roi_asset_id='RISMA_Stations_Canada')
     
     # df = s1.load_df()
     # print(df.head())
