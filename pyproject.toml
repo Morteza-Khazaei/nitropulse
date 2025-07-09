@@ -22,8 +22,14 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physic of Microwave Remote Sensing",
 ]
 dependencies = [
-    "pandas>=2.2",
-
+    "pandas",
+    "seaborn",
+    "scipy",
+    "ipykernel",
+    "earthengine-api",
+    "gdown",
+    "google-api-python-client",
+    "google-auth-oauthlib",
 ]
 [project.scripts]
 inversion = "inversion.core:cli"

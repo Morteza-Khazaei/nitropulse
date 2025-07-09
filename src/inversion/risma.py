@@ -5,6 +5,8 @@ import re
 import pandas as pd
 from datetime import datetime, timedelta
 
+from risma import AquariusWebPortal
+
 
 class RismaData:
     """
@@ -18,24 +20,59 @@ class RismaData:
         workspace_dir = os.path.join(workspace_dir, 'inputs')
         risma_dir = None
         for folder in os.listdir(workspace_dir):
-            if os.path.isdir(os.path.join(workspace_dir, folder)) and 'RISMA_CSV' in folder:
+            if os.path.isdir(os.path.join(workspace_dir, folder)) and folder.startswith('RISMA_CSV'):
                 print(f"Found RISMA_CSV folder: {folder}")
                 risma_dir = folder
                 break
-            else:
-                raise FileNotFoundError(f"No folder containing 'RISMA_CSV' found in {workspace_dir}.")
+            # else:
+            #     raise FileNotFoundError(f"No folder containing 'RISMA_CSV' found in {workspace_dir}.")
         
         self.risma_dir = os.path.join(workspace_dir, risma_dir)
         self.df_texture = self.load_stations_texture(depth=5)
     
-    def download_risma_data(self,):
+    def download_risma_data(self, out_dir, stations, parameters, sensors, depths, start_date, end_date):
         """
-        Download the Risma soil data from the specified directory.
-        This method is a placeholder for downloading data if needed.
+        Download RISMA measurements from data center
         """
-        print("Downloading Risma data is not implemented yet.")
-        pass
-    
+
+        if not out_dir:
+            user_home = os.path.expanduser('~')
+            out_dir = os.path.join(user_home, 'Downloads', 'RISMA_CSV')
+        
+        # make dir if not exit
+        os.makedirs(out_dir, exist_ok=True)
+        
+        server="agrifood.aquaticinformatics.net"
+        aafc = AquariusWebPortal(server=server, auto_accept_disclaimer=True)
+
+        # Load params
+        params = aafc.fetch_params()
+
+        # Filter parameters
+        level_params = params[params.param_name.isin(parameters)]
+
+        # Filter stations
+        stations = aafc.fetch_locations(stations=stations)
+
+        # Load available datasets
+        datasets = aafc.fetch_datasets(
+            param_names=level_params.param_name.tolist(), 
+            stations=stations.loc_id.tolist(), 
+            sensors=sensors, depths=depths)
+        
+        # groupby datasets based on loc_id
+        gp_df = datasets.groupby('loc_id')
+        for station, df in gp_df:
+            fname = os.path.join(out_dir, f'{station}_{start_date.split("-")[0]}_to_{end_date.split("-")[0]}.csv')
+
+            st_df = aafc.fetch_dataset(dset_names=df.dset_name.to_list(), start=start_date, end=end_date, extra_data_types=None)
+
+            # Save the DataFrame to a CSV file named 'data.csv'
+            st_df.to_csv(fname, index=False)
+        
+        return None
+
+
     def load_df(self, depth='0 to 5 cm'):
         """        Load the Risma soil data from CSV files in the specified directory.
         This method processes both ascending and descending data from the Risma project.
@@ -249,20 +286,21 @@ class RismaData:
 
     def read_risma_bulk_csv(self, fname, station, S1_lot='18:30'):
 
-        df = pd.read_csv(fname, header=None, low_memory=False)
-        df = df.drop(index=[0,1,2,3,5])
-        df = df.reset_index(drop=True)
-        df[0] = pd.to_datetime(df[0], format='%Y-%m-%d %H:%M:%S')
+        df = pd.read_csv(fname, header=5, low_memory=False).reset_index(drop=True)
 
-        # Set the datetime column as the index
+        df.columns = [col.split('.')[1] if '.' in col else '' for col in df.columns.to_list()]
+
+        # 2. Create new column names by combining the current name and the unit and assign
+        df.columns = [unit.replace('Value', col) for col, unit in zip(df.columns, df.iloc[0])]
+
+        # 4. Drop the first row which contained the units
+        df = df.drop(0).reset_index(drop=True)
+
+        # Convert the 'Date' column to datetime objects
+        df[df.columns[0]] = pd.to_datetime(df[df.columns[0]])
+
+        # Set the first column (at index 0) as index
         df.set_index(df.columns[0], inplace=True)
-
-        df.columns = df.iloc[0]
-        df = df.iloc[1:]
-
-        # remove first part of the columns name
-        df.columns = [col.split('.')[1] for col in df.columns]
-        # print(df.columns)
 
         # create a date object from 18:30
         overpass_time = datetime.strptime(S1_lot, '%H:%M')
@@ -274,14 +312,14 @@ class RismaData:
             df[col] = pd.to_numeric(df[col], errors='coerce')  # 'coerce' will set non-numeric values to NaN
 
         # calculate mean daily soil temperature first group hourly rows into daily rows
-        df_stats_air = df['Air temperature'].resample('D').agg(['min', 'max'])
+        df_stats_air = df['Air temperature (Â°C)'].resample('D').agg(['min', 'max'])
         df_stats_air['mean_airt'] = df_stats_air['min'].add(df_stats_air['max']).div(2.)
         df_stats_air.drop(columns=['min', 'max'], inplace=True)
 
-        if not 'Soil temperature 0 to 5 cm depth' in df.columns:
-            sst_var = 'Soil temperature 5 cm depth'
+        if not 'Soil temperature 0 to 5 cm depth (Â°C)' in df.columns:
+            sst_var = 'Soil temperature 5 cm depth (Â°C)'
         else:
-            sst_var = 'Soil temperature 0 to 5 cm depth'
+            sst_var = 'Soil temperature 0 to 5 cm depth (Â°C)'
 
         df_stats_sst = df[sst_var].resample('D').agg(['min', 'max'])
         df_stats_sst['mean_sst'] = df_stats_sst['min'].add(df_stats_sst['max']).div(2.)

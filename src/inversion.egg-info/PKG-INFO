@@ -215,7 +215,14 @@ Classifier: Topic :: Scientific/Engineering :: Physic of Microwave Remote Sensin
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Requires-Dist: pandas>=2.2
+Requires-Dist: pandas
+Requires-Dist: seaborn
+Requires-Dist: scipy
+Requires-Dist: ipykernel
+Requires-Dist: earthengine-api
+Requires-Dist: gdown
+Requires-Dist: google-api-python-client
+Requires-Dist: google-auth-oauthlib
 Dynamic: license-file
 
 # inversion

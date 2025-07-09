@@ -20,11 +20,12 @@ def cli():
     """
     pass
 
+risma_stations = ['RISMA_MB1', 'RISMA_MB2', 'RISMA_MB3', 'RISMA_MB4', 'RISMA_MB5', 'RISMA_MB6', 'RISMA_MB7', 'RISMA_MB8', 'RISMA_MB9', 'RISMA_MB10', 'RISMA_MB11', 'RISMA_MB12', 'RISMA_MB13']
 
 @cli.command('run')
 @click.option('--workspace-dir', default='./assets', show_default=True, help='Workspace directory.')
 @click.option('--auto-download', is_flag=True, show_default=True, help='Auto download Sentinel-1 data via Google Earth Engine.')
-@click.option('--stations', multiple=True, default=['MB1', 'MB2', 'MB3', 'MB4', 'MB5', 'MB6', 'MB7', 'MB8', 'MB9', 'MB10', 'MB11', 'MB12', 'MB13', 'MB14', 'MB15'], show_default=True, help='List of station IDs to process.')
+@click.option('--stations', multiple=True, default=risma_stations, show_default=True, help='List of station IDs to process.')
 @click.option('--buffer-distance', default=15, show_default=True, help='Buffer distance for Sentinel-1 data in meters.')
 @click.option('--start-date', default='2010-01-01', show_default=True, help='Start date for Sentinel-1 data (YYYY-MM-DD).')
 @click.option('--end-date', default='2024-01-01', show_default=True, help='End date for Sentinel-1 data (YYYY-MM-DD).')
@@ -75,14 +76,30 @@ def run(
 
     # Download or load data
     if auto_download:
+        click.echo("⬇️  Downloading RISMA data...")
+        risma.download_risma_data(
+            out_dir='../assets/inputs/RISMA_CSV_SSM_SST_AirT_2015_2023_new', 
+            stations=stations, parameters=['Air Temp', 'Soil temperature', 'Soil Moisture'], 
+            sensors='average', depths=['0 to 5 cm', '5 cm'], 
+            start_date=start_date, end_date=end_date)
+
         click.echo("⬇️  Downloading S1 data...")
-        s1.download(station_ids=stations, buffer_distance=buffer_distance, start_date=start_date, end_date=end_date, roi_asset=roi_asset_id, drive_folder="GEE_Exports")
+        s1.download(
+            station_ids=stations, buffer_distance=buffer_distance, 
+            start_date=start_date, end_date=end_date, 
+            roi_asset=roi_asset_id, drive_folder="GEE_Exports")
+    
     click.echo("📖 Loading RISMA and S1 data...")
 
     # Phenology
     click.echo("🌱 Running phenology model...")
     bbch = BBCH(workspace_dir)
     pheno_df = bbch.run()
+
+    # Save results
+    output_file = os.path.join(workspace_dir, 'outputs', 'pheno_df.csv')
+    click.echo(f"💾 Saving results to {output_file}.")
+    pheno_df.to_csv(output_file, index=False)
 
     # Inversion
     click.echo("🔄 Running inversion...")
@@ -92,6 +109,7 @@ def run(
     # Save results
     output_file = os.path.join(workspace_dir, 'outputs', 'inv_df.csv')
     click.echo(f"💾 Saving results to {output_file}.")
+    in_df.to_csv(output_file, index=False)
 
     click.echo("✅ Inversion workflow completed!")
 
