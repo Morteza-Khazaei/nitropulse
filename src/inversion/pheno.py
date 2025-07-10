@@ -39,7 +39,7 @@ class BBCH:
     def run(self):
         
         # Merge 'grouped' and 'df_RISMA_asc' based on 'year' and 'doy'
-        merged_df = pd.merge(self.df_risma, self.df_S1, on=['year', 'doy', 'op', 'station'], how='inner')
+        merged_df = pd.merge(self.df_risma, self.df_S1, on=['year', 'doy', 'op', 'Station'], how='inner')
         
         # drop nodata inplace based on VV and VH
         merged_df.dropna(subset=['VV', 'VH', 'angle'], inplace=True)
@@ -69,7 +69,7 @@ class BBCH:
         merged_df['cum_GDD'] = merged_df[['cum_GDD_air', 'cum_GDD_soil']].mean(axis=1)
 
         # Calculate BBCH stage based on cumulative GDD and soil temperature
-        merged_df['BBCH'] = merged_df.apply(lambda row: self.get_bbch_from_soil_gdd(row['lc'], row['cum_GDD'], row['SST'], row['BASE_TEMP']), axis=1)
+        merged_df['BBCH'] = merged_df.apply(lambda row: self.get_bbch_from_soil_gdd(row['lc'], row['cum_GDD'], row['SST']), axis=1)
 
         # Calculate the cumulative sum of SSM for each year
         merged_df['cum_SSM'] = merged_df.groupby('year')['SSM'].cumsum()
@@ -77,7 +77,7 @@ class BBCH:
         return merged_df
     
 
-    def get_bbch_from_soil_gdd(self, crop: str, cum_gdd: float, sst: float, base_temp: float) -> int:
+    def get_bbch_from_soil_gdd(self, crop: str, cum_gdd: float, sst: float) -> int:
         """
         Map cumulative soil GDD to a BBCH stage via piecewise linear interpolation
         between defined thresholds.

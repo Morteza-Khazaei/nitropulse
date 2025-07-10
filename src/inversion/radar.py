@@ -190,7 +190,7 @@ class S1Data:
         # Loop through each file in the directory
         for filename in sorted(os.listdir(self.s1_dir), key=lambda x:int(x.split('_')[3][2:])):
             if filename.endswith(".csv"):  # Check if the file is a CSV file
-                station_name = filename.split('_')[1]
+                station_name = filename.split('_')[3]
                 filepath = os.path.join(self.s1_dir, filename)
                 print(f"\tProcessing file: {filename}")
                 df_S1 = self.read_S1_sigma_csv(filepath, station_name)
@@ -254,7 +254,7 @@ class S1Data:
             values=df_t.columns.difference(['op', 'year', 'doy', 'band'])[0]  # usually the value column
         ).reset_index()
         
-        gp_df['station'] = station
+        gp_df['Station'] = station
 
         return gp_df
     
