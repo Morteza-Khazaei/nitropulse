@@ -4,6 +4,7 @@ pyproject.toml
 setup.py
 src/inversion/__init__.py
 src/inversion/core.py
+src/inversion/ensemble_rf.py
 src/inversion/gdrive.py
 src/inversion/inverse.py
 src/inversion/pheno.py

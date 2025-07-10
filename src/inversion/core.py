@@ -6,6 +6,7 @@ from inversion.risma import RismaData
 from inversion.radar import S1Data
 from inversion.pheno import BBCH
 from inversion.inverse import Inverse
+from inversion.ensemble_rf import RegressionRF
 
 
 @click.group(context_settings=dict(help_option_names=['-h', '--help']))
@@ -34,12 +35,13 @@ risma_stations = ['RISMA_MB1', 'RISMA_MB2', 'RISMA_MB3', 'RISMA_MB4', 'RISMA_MB5
 @click.option('--fghz', default=5.4, show_default=True, help='Frequency in GHz for inversion.')
 @click.option('--models', default='{"RT_s": "PRISM1", "RT_v": "Diff"}', show_default=True, help='RT models in JSON format.')
 @click.option('--acftype', default='exp', show_default=True, help='ACF type for AIEM model.')
+@click.option('--features', default="['SSM', 'vvs', 's']", show_default=True, help='Feature list based on RT_s model outputs.')
 
 
 def run(
     workspace_dir, auto_download, 
     stations, buffer_distance, start_date, end_date, gee_project_id, roi_asset_id, 
-    fghz, models, acftype):
+    fghz, models, acftype, features):
     """
     Run the full inversion workflow from data download to result generation.
 
@@ -104,15 +106,22 @@ def run(
     # Inversion
     click.echo("🔄 Running inversion...")
     inv = Inverse(workspace_dir, fGHz=fghz, models=models_dict, acftype=acftype)
-    in_df = inv.run(pheno_df)
+    inv_df = inv.run(pheno_df)
 
     # Save results
     output_file = os.path.join(workspace_dir, 'outputs', 'inv_df.csv')
     click.echo(f"💾 Saving results to {output_file}.")
-    in_df.to_csv(output_file, index=False)
-
+    inv_df.to_csv(output_file, index=False)
     click.echo("✅ Inversion workflow completed!")
 
+    # Train th ensemble models and send them to GEE
+    click.echo('🔄 Running ensemble training...')
+    ensrf = RegressionRF()
+    rf_models = ensrf.run(df=inv_df, vars=features.split(','))
+    click.echo('✅ Ensemble training completed!')
+    click.echo('🔄 Uploading ensemble models to GEE...')
+    passed = ensrf.upload_rf_to_gee(rf_models, gee_project_id, save_dectree=False)
+    click.echo('✅ Ensemble models uploaded to GEE!')
 
 if __name__ == "__main__":
     cli()

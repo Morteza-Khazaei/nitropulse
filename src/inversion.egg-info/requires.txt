@@ -6,3 +6,4 @@ earthengine-api
 gdown
 google-api-python-client
 google-auth-oauthlib
+geemap

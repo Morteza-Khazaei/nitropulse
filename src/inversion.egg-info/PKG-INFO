@@ -223,6 +223,7 @@ Requires-Dist: earthengine-api
 Requires-Dist: gdown
 Requires-Dist: google-api-python-client
 Requires-Dist: google-auth-oauthlib
+Requires-Dist: geemap
 Dynamic: license-file
 
 # inversion
