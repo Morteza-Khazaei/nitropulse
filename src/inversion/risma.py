@@ -68,10 +68,17 @@ class RismaData:
         for station, df in gp_df:
             fname = os.path.join(out_dir, f'{station}_{start_date.split("-")[0]}_to_{end_date.split("-")[0]}.csv')
 
-            st_df = aafc.fetch_dataset(dset_names=df.dset_name.to_list(), start=start_date, end=end_date, extra_data_types=None)
+            # Check if file already exits
+            if os.path.exists(fname):
+                print(f"The file '{fname}' exists. \n\tSkipping download process for {station}.")
+                continue
+            else:
+                print(f"The file '{fname}' does not exist. \n\tProceeding with download process for {station}.")
 
-            # Save the DataFrame to a CSV file named 'data.csv'
-            st_df.to_csv(fname, index=False)
+                st_df = aafc.fetch_dataset(dset_names=df.dset_name.to_list(), start=start_date, end=end_date, extra_data_types=None)
+
+                # Save the DataFrame to a CSV file named 'data.csv'
+                st_df.to_csv(fname, index=False)
         
         return None
 
