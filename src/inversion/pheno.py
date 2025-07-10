@@ -20,7 +20,7 @@ class BBCH:
         risma = RismaData(workspace_dir)
         self.df_risma = risma.load_df()
 
-        s1 = S1Data(workspace_dir, auto_download)
+        s1 = S1Data(workspace_dir, auto_download=auto_download)
         self.df_S1 = s1.load_df()
 
         # Load lc_base_temp from the JSON file
