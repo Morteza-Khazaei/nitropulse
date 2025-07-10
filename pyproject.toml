@@ -30,7 +30,8 @@ dependencies = [
     "gdown",
     "google-api-python-client",
     "google-auth-oauthlib",
-    "geemap"
+    "geemap",
+    "RISMA"
 ]
 [project.scripts]
 inversion = "inversion.core:main"
