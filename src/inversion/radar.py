@@ -12,21 +12,25 @@ class S1Data:
     """
     Class to handle S1 soil data processing.
     """
-    def __init__(self, workspace_dir, auto_download=False):
+    def __init__(self, workspace_dir, s1_dir='S1_CSV_files' ,auto_download=False):
         """
         Initialize the S1Data class.
         """
-        workspace_dir = os.path.join(workspace_dir, 'inputs')
-        s1_dir = None
-        for folder in os.listdir(workspace_dir):
-            if os.path.isdir(os.path.join(workspace_dir, folder)) and 'GEE_' in folder:
+        inputs_dir = os.path.join(workspace_dir, 'inputs')
+        os.makedirs(inputs_dir, exist_ok=True)
+
+        for folder in os.listdir(inputs_dir):
+            if os.path.isdir(os.path.join(inputs_dir, folder)) and 'S1_CSV' in folder:
                 print(f"Found GEE folder: {folder}")
-                s1_dir = folder
-                break
-            # else:
-            #     raise FileNotFoundError(f"No folder containing 'GEE' found in {workspace_dir}.")
+                s1_dir = os.path.join(inputs_dir, s1_dir)
+
+        # Check if risma_dir exits
+        if not os.path.exists(s1_dir):
+            os.makedirs(s1_dir)
+        else:
+            print(f"S1_CSV folder already exists: {s1_dir}")
+        self.s1_dir = s1_dir 
         self.workspace_dir = workspace_dir
-        self.s1_dir = os.path.join(workspace_dir, s1_dir)
         
         self.s1_google_drive_dir = s1_dir
         self.auto_download = auto_download
@@ -58,7 +62,7 @@ class S1Data:
             file_path = os.path.join(self.s1_dir, f'{fname}.csv')
 
             # Check if file exists
-            if not os.path.exists(file_path):
+            if os.path.exists(file_path):
                 print(f"The file '{file_path}' exists. \n\tSkipping download process for {fname}.")
                 continue  # Skip to the next station if the file already exists
             else:

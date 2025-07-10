@@ -12,22 +12,25 @@ class RismaData:
     """
     Class to handle Risma soil data processing.
     """
-    def __init__(self, workspace_dir):
+    def __init__(self, workspace_dir, risma_dir='RISMA_CSV_files'):
         """
         Initialize the RismaData class.
         """
         # Automatically find the RISMA_CSV folder in the workspace directory
         workspace_dir = os.path.join(workspace_dir, 'inputs')
-        risma_dir = None
+        os.makedirs(workspace_dir, exist_ok=True)
+
         for folder in os.listdir(workspace_dir):
             if os.path.isdir(os.path.join(workspace_dir, folder)) and folder.startswith('RISMA_CSV'):
                 print(f"Found RISMA_CSV folder: {folder}")
-                risma_dir = folder
-                break
-            # else:
-            #     raise FileNotFoundError(f"No folder containing 'RISMA_CSV' found in {workspace_dir}.")
+                risma_dir = os.path.join(workspace_dir, folder)
         
-        self.risma_dir = os.path.join(workspace_dir, risma_dir)
+        # Check if risma_dir exits
+        if not os.path.exists(risma_dir):
+            os.makedirs(risma_dir)
+        else:
+            print(f"RISMA_CSV folder already exists: {risma_dir}")
+        self.risma_dir = risma_dir
         self.df_texture = self.load_stations_texture(depth=5)
     
     def download_risma_data(self, out_dir, stations, parameters, sensors, depths, start_date, end_date):
