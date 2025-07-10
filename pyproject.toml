@@ -33,4 +33,4 @@ dependencies = [
     "geemap"
 ]
 [project.scripts]
-inversion = "inversion.core:cli"
+inversion = "inversion.core:main"

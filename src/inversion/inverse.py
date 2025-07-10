@@ -38,7 +38,6 @@ class Inverse:
         self.crop_inversion_bounds = crop_inversion_bounds
 
 
-
     def run(self, df):
         # Implementation of the run method will go here
         df = df.groupby(['op', 'year', 'doy', 'angle'], group_keys=False).apply(lambda x: self.inversion(x, self.crop_inversion_bounds))

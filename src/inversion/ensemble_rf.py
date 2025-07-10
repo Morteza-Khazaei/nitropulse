@@ -14,7 +14,7 @@ class RegressionRF:
     """
     A class for performing Random Forest Regression.
     """
-    def __init__(self, n_estimators=15, random_state=42):
+    def __init__(self, workspace_dir, df):
         """
         Initializes the RegressionRF with specified parameters.
 
@@ -27,17 +27,18 @@ class RegressionRF:
             (if bootstrap=True) and the sampling of the features to consider when looking for the best split
             at each node (if max_features < n_features). The default is 42.
         """
-        self.model = RandomForestRegressor(n_estimators=n_estimators, random_state=random_state, max_depth=15)
+        self.model = RandomForestRegressor(n_estimators=15, random_state=42, max_depth=15)
+        self.workspace_dir = workspace_dir
+        self.df = df
     
 
-    def run(self, df, vars):
+    def run(self, vars):
         trained_models = {}
         for var in vars:
-            print(f'Training {var}...')
-            trained_models[var] = self.__train(df, var)
+            print(f'\t🔄 Training ensemble model for {var}.')
+            trained_models[var] = self.__train(var)
             
         return trained_models
-    
     
     def __split_data(self, df, var, test_size=0.2, random_state=42):
         """
@@ -70,7 +71,7 @@ class RegressionRF:
         
         return train_test_split(X, y, test_size=test_size, random_state=random_state)
     
-    def __train(self, df, var):
+    def __train(self, var):
         """
         Trains the Random Forest Regressor model.
 
@@ -81,7 +82,7 @@ class RegressionRF:
         y_train : array-like of shape (n_samples,) or (n_samples, n_outputs)
             The target values (real numbers).
         """
-        X_train, X_test, y_train, y_test = self.__split_data(df, var)
+        X_train, X_test, y_train, y_test = self.__split_data(self.df, var)
         reg_rf = self.model.fit(X_train, y_train)
 
         # Make predictions
@@ -95,12 +96,12 @@ class RegressionRF:
         bias= np.mean(y_test - y_pred)
         ubrmse = np.sqrt(rmse**2 - bias**2)
 
-        print(f'R2: {r2}')
-        print(f'MAE: {mae}')
-        print(f'MSE: {mse}')
-        print(f'RMSE: {rmse}')
-        print(f'UBRMSE: {ubrmse}')
-        print(f'Bias: {bias}')
+        print(f'\tR2: {r2}')
+        print(f'\tMAE: {mae}')
+        print(f'\tMSE: {mse}')
+        print(f'\tRMSE: {rmse}')
+        print(f'\tUBRMSE: {ubrmse}')
+        print(f'\tBias: {bias}')
         print()
 
         return reg_rf
@@ -119,6 +120,7 @@ class RegressionRF:
         user_id = '/'.join(user_id.split('/')[:-1])
 
         for var, model in tranied_rfs.items():
+            print(f'\t🔄 Uploading ensemble model for {var}.')
 
             n_estimators = model.n_estimators
             mdepth = model.max_depth
@@ -143,8 +145,7 @@ class RegressionRF:
             task.start()
 
             if save_dectree:
-                usr_home = os.path.expanduser('~')
-                file_path = os.path.join(usr_home, 'Downloads', rfname + '.csv')
+                file_path = os.path.join(self.workspace_dir, 'outputs', rfname + '.csv')
                 ml.trees_to_csv(trees, file_path)
         
         return None

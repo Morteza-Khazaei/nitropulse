@@ -1,4 +1,4 @@
-from .core import cli
+from .core import main
 
 from .risma import RismaData
 from .radar import S1Data
