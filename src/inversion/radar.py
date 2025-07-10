@@ -58,7 +58,7 @@ class S1Data:
         # Loop through each station ID in the list
         for station_id in stations:
 
-            fname = f'RISMA_{station_id}_{start_date.split("-")[0]}_to_{end_date.split("-")[0]}_buffer{buffer_distance}m'
+            fname = f'S1_Backscatter_RISMA_{station_id}_{start_date.split("-")[0]}_to_{end_date.split("-")[0]}_buffer{buffer_distance}m'
             file_path = os.path.join(self.s1_dir, f'{fname}.csv')
 
             # Check if file exists
