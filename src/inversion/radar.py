@@ -12,7 +12,7 @@ class S1Data:
     """
     Class to handle S1 soil data processing.
     """
-    def __init__(self, workspace_dir, s1_dir='S1_CSV_files' ,auto_download=False):
+    def __init__(self, workspace_dir, s1_dir='S1_CSV_files', auto_download=False):
         """
         Initialize the S1Data class.
         """
@@ -188,7 +188,7 @@ class S1Data:
         list_of_dfs = []
 
         # Loop through each file in the directory
-        for filename in sorted(os.listdir(self.s1_dir), key=lambda x:int(x.split('_')[1][2:])):
+        for filename in sorted(os.listdir(self.s1_dir), key=lambda x:int(x.split('_')[3][2:])):
             if filename.endswith(".csv"):  # Check if the file is a CSV file
                 station_name = filename.split('_')[1]
                 filepath = os.path.join(self.s1_dir, filename)
