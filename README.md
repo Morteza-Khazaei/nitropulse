@@ -1,18 +1,8 @@
 # SAR Backscatter Inversion Package
 
-A comprehensive Python package for estimating soil and vegetation parameters from Sentinel-1 radar data using ground-based measurements from RISMA (Real-time In-Situ Soil Monitoring for Agriculture) networks.
+A Python package for estimating soil and vegetation parameters from Sentinel-1 radar data using ground-based measurements from RISMA (Real-time In-Situ Soil Monitoring for Agriculture) networks.
 
 ## Overview
-
-This package orchestrates a complete workflow for SAR backscatter inversion, including:
-
-- **Data Integration**: Combines Sentinel-1 radar data with ground-truth measurements from RISMA stations
-- **Phenology Modeling**: Determines crop growth stages using BBCH (Biologische Bundesanstalt, Bundessortenamt und CHemische Industrie) scale
-- **Inversion Algorithm**: Estimates soil moisture, vegetation parameters, and surface roughness
-- **Machine Learning**: Trains ensemble Random Forest models for parameter estimation
-- **Cloud Integration**: Uploads trained models to Google Earth Engine for large-scale applications
-
-## Workflow Components
 
 The inversion workflow consists of the following main steps:
 
@@ -48,6 +38,18 @@ The inversion workflow consists of the following main steps:
 
 ## Installation
 
+### Dependencies
+
+The package automatically installs the following dependencies:
+
+- Python 3.8+
+- Google Earth Engine Python API
+- NumPy, Pandas, SciPy
+- scikit-learn
+- RISMA *developed during this project*
+- pyAIEM *developed during this project*
+- SSRT *developed during this project*
+
 ### Install from GitHub
 
 ```bash
@@ -63,15 +65,6 @@ git clone https://github.com/Morteza-Khazaei/inversion.git
 cd inversion
 pip install -e .
 ```
-
-### Dependencies
-
-The package automatically installs the following dependencies:
-
-- Python 3.8+
-- Google Earth Engine Python API
-- NumPy, Pandas, SciPy
-- scikit-learn
 
 ### Verify Installation
 
@@ -180,8 +173,7 @@ python -m inversion --auto-download
 
 ### 1. Data Preparation
 - Downloads RISMA ground-truth data (soil moisture, temperature)
-- Retrieves Sentinel-1 backscatter data from Google Earth Engine
-- Applies spatial buffering around station locations
+- Applies spatial buffering around station locations and retrieves Sentinel-1 backscatter data from Google Earth Engine
 
 ### 2. Phenology Modeling
 - Runs BBCH phenology model to determine crop growth stages
