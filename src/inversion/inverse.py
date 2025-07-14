@@ -12,7 +12,7 @@ from ssrt.utils import Dobson85
 
 
 
-class Inverse:
+class InversionWorkflow:
     """
     Class to handle inversion data processing.
     """

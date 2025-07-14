@@ -12,15 +12,39 @@ This package orchestrates a complete workflow for SAR backscatter inversion, inc
 - **Machine Learning**: Trains ensemble Random Forest models for parameter estimation
 - **Cloud Integration**: Uploads trained models to Google Earth Engine for large-scale applications
 
-## Features
+## Workflow Components
 
-- ✅ Automated data download from Google Earth Engine
-- ✅ Multi-station processing with configurable buffer distances
-- ✅ Flexible date range selection
-- ✅ Multiple radiative transfer models (PRISM1, Diff, etc.)
-- ✅ AIEM (Advanced Integral Equation Model) integration
-- ✅ Ensemble machine learning with Random Forest
-- ✅ Google Earth Engine integration for scalable deployment
+The inversion workflow consists of the following main steps:
+
+### 1. Data Acquisition and Preparation
+- **RISMA Ground Measurements**:
+  - Downloads and prepares soil moisture and temperature data from RISMA stations.
+  - Stores all necessary CSV files in the `./assets/inputs/...` directory.
+- **Sentinel-1 Backscatter Data**:
+  - Retrieves Sentinel-1 backscatter data from Google Earth Engine (GEE).
+  - Applies spatial buffering around each RISMA station to a reliable time series of backscatter data for each station.
+
+### 2. Growing Degree Days (GDD) and Phenology Modeling
+- **GDD Calculation**:
+  - Calculates accumulated Growing Degree Days (GDD) from RISMA temperature data.
+- **BBCH Scale**:
+  - Uses GDD to compute the BBCH scale, generating a time series of crop growth stages.
+  - Estimates crop height per day of year (DOY), a critical parameter for vegetation radiative transfer modeling (RTM).
+
+### 3. Inversion Process
+- **Backscatter Separation**:
+  - Separates total backscatter from Sentinel-1 images into soil and vegetation components.
+- **Radiative Transfer Models**:
+  - Uses vegetation RTM and crop height data to accurately estimate soil and vegetation parameters.
+
+### 4. Machine Learning and Deployment
+- **Ensemble Model Training**:
+  - Trains and tests ensemble models to estimate:
+    - Bare soil backscatter
+    - Soil roughness
+    - Soil moisture
+- **Google Earth Engine Deployment**:
+  - Deploys trained models to the GEE platform for large-scale soil moisture estimation using Sentinel-1 backscatter images.
 
 ## Installation
 
@@ -48,8 +72,6 @@ The package automatically installs the following dependencies:
 - Google Earth Engine Python API
 - NumPy, Pandas, SciPy
 - scikit-learn
-- Click (for CLI functionality)
-- Other dependencies listed in `requirements.txt`
 
 ### Verify Installation
 
