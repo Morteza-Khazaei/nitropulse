@@ -220,7 +220,7 @@ class Inverse:
                 vv_veg = np.nan
                 vv_soil = np.nan
                 rvi = np.nan
-                height = np.nan
+                height = (np.nan, np.nan, np.nan)
 
             dvvs.append(d)
             cvvs.append(c)
