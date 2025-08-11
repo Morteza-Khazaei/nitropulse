@@ -148,24 +148,22 @@ class Inverse:
         heights = []
 
         for idx, row in df_x.iterrows():
-            # print(idx)
-            vv = self.to_power(row['VV'])
-            vh = self.to_power(row['VH'])
-            rvi = (4 * vh) / (vh + vv)
-            theta_i = row['angle']
-            ssm = row['SSM']
-            sst = row['SST']
-            bbch = row['BBCH']
-            croptype = str(int(row['lc']))
-            sand = row['Sand']
-            silt = row['Silt']
-            clay = row['Clay']
-            bulk = row['bulk']
-            doy = row['doy']
-            op = row['op']
-
 
             try:
+                vv = self.to_power(row['VV'])
+                vh = self.to_power(row['VH'])
+                rvi = (4 * vh) / (vh + vv)
+                theta_i = row['angle']
+                ssm = row['SSM']
+                sst = row['SST']
+                bbch = row['BBCH']
+                croptype = str(int(row['lc']))
+                sand = row['Sand']
+                silt = row['Silt']
+                clay = row['Clay']
+                bulk = row['bulk']
+                doy = row['doy']
+                op = row['op']
                 c_bound = bounds[croptype]['cbound']
                 s_bound = bounds[croptype]['sbound']
                 l_bound = bounds[croptype]['lbound']
