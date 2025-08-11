@@ -112,7 +112,7 @@ class Inverse:
             min_ph = 0
         max_ph = ph + 0.001
 
-        return min_ph, ph, max_ph
+        return min_ph, ph, max_ph, k, b
     
     def residuals_local(self, params, fGHz, acftype, RT_models, mv, vv_obs, theta_i, rvi, sand, clay, bulk, sst):
         d, c, s, l, omega = params
@@ -146,6 +146,8 @@ class Inverse:
         SSRl = []
         rvis = []
         heights = []
+        ks = []
+        bs = []
 
         for idx, row in df_x.iterrows():
 
@@ -220,7 +222,7 @@ class Inverse:
                 vv_veg = np.nan
                 vv_soil = np.nan
                 rvi = np.nan
-                height = (np.nan, np.nan, np.nan)
+                height = (np.nan, np.nan, np.nan, np.nan, np.nan)
 
             dvvs.append(d)
             cvvs.append(c)
@@ -231,6 +233,8 @@ class Inverse:
             SSRl.append(l)
             rvis.append(rvi)
             heights.append(height[1])
+            ks.append(height[3])
+            bs.append(height[4])
 
         # update df_x with new values
         df_x['d'] = dvvs
@@ -242,6 +246,8 @@ class Inverse:
         df_x['l'] = SSRl
         df_x['rvi'] = rvis
         df_x['height'] = heights
+        df_x['k'] = ks
+        df_x['b'] = bs
 
         return df_x
 
