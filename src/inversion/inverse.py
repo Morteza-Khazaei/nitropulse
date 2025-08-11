@@ -145,6 +145,7 @@ class Inverse:
         SSRs = []
         SSRl = []
         rvis = []
+        heights = []
 
         for idx, row in df_x.iterrows():
             # print(idx)
@@ -220,6 +221,8 @@ class Inverse:
                 w = np.nan
                 vv_veg = np.nan
                 vv_soil = np.nan
+                rvi = np.nan
+                height = np.nan
 
             dvvs.append(d)
             cvvs.append(c)
@@ -229,6 +232,7 @@ class Inverse:
             SSRs.append(s)
             SSRl.append(l)
             rvis.append(rvi)
+            heights.append(height[1])
 
         # update df_x with new values
         df_x['d'] = dvvs
@@ -239,6 +243,7 @@ class Inverse:
         df_x['s'] = SSRs
         df_x['l'] = SSRl
         df_x['rvi'] = rvis
+        df_x['height'] = heights
 
         return df_x
 
