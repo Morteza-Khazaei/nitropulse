@@ -3,12 +3,12 @@ requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "inversion"
-version = "0.1.0" # Or read dynamically, see below
+name = "nitropulse"
+version = "0.1.0"
 authors = [
     {name = "Morteza Khazaei", email = "morteza.khazaei@usherbrooke.ca"},
 ]
-description = "SAR backscatter inversion"
+description = "A precision tool for mapping nitrous oxide (N₂O) emission pulses in agricultural landscapes"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {file = "LICENSE"} # Assuming you have a LICENSE file, or use {text = "MIT"} for example
@@ -18,8 +18,8 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Topic :: Scientific/Engineering :: Physic of Microwave Remote Sensing",
+    "Programming Language :: Python :: 3.8",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
 ]
 dependencies = [
     "pandas",
@@ -34,4 +34,4 @@ dependencies = [
     "RISMA"
 ]
 [project.scripts]
-inversion = "inversion.core:main"
+nitropulse = "nitropulse.cli:main"

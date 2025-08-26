@@ -1,0 +1,10 @@
+pandas
+seaborn
+scipy
+ipykernel
+earthengine-api
+gdown
+google-api-python-client
+google-auth-oauthlib
+geemap
+RISMA

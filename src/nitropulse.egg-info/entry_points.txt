@@ -1,0 +1,2 @@
+[console_scripts]
+nitropulse = nitropulse.cli:main

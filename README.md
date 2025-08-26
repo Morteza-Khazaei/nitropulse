@@ -53,6 +53,8 @@ The package automatically installs the following dependencies:
 ### Install from GitHub
 
 ```bash
+pip install git+https://github.com/Morteza-Khazaei/AIEM.git
+pip install git+https://github.com/Morteza-Khazaei/SSRT.git
 pip install git+https://github.com/Morteza-Khazaei/inversion.git
 ```
 
