@@ -11,12 +11,12 @@ authors = [
 description = "A precision tool for mapping nitrous oxide (N₂O) emission pulses in agricultural landscapes"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {file = "LICENSE"} # Assuming you have a LICENSE file, or use {text = "MIT"} for example
+license = {text = "Apache-2.0"}
 keywords = ["AIEM", "scattering", "remote sensing", "electromagnetics", "radar"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.8",
     "Topic :: Scientific/Engineering :: Atmospheric Science",

@@ -1,6 +1,6 @@
-# SAR Backscatter Inversion Package
+# nitropulse
 
-A Python package for estimating soil and vegetation parameters from Sentinel-1 radar data using ground-based measurements from RISMA (Real-time In-Situ Soil Monitoring for Agriculture) networks.
+A precision tool for mapping nitrous oxide (N₂O) emission pulses in agricultural landscapes.
 
 ## Overview
 
@@ -53,9 +53,10 @@ The package automatically installs the following dependencies:
 ### Install from GitHub
 
 ```bash
-pip install git+https://github.com/Morteza-Khazaei/AIEM.git
-pip install git+https://github.com/Morteza-Khazaei/SSRT.git
-pip install git+https://github.com/Morteza-Khazaei/inversion.git
+# Install dependencies first if they are not on PyPI
+# pip install git+https://github.com/Morteza-Khazaei/AIEM.git
+# pip install git+https://github.com/Morteza-Khazaei/SSRT.git
+pip install git+https://github.com/Morteza-Khazaei/nitropulse.git
 ```
 
 ### For Development
@@ -63,8 +64,8 @@ pip install git+https://github.com/Morteza-Khazaei/inversion.git
 If you want to contribute or modify the package:
 
 ```bash
-git clone https://github.com/Morteza-Khazaei/inversion.git
-cd inversion
+git clone https://github.com/Morteza-Khazaei/nitropulse.git
+cd nitropulse
 pip install -e .
 ```
 
