@@ -74,7 +74,7 @@ pip install -e .
 After installation, verify the package is working:
 
 ```bash
-python -c "import inversion; print('Installation successful!')"
+python -c "import nitropulse; print('Installation successful!')"
 ```
 
 ## Quick Start
@@ -82,7 +82,7 @@ python -c "import inversion; print('Installation successful!')"
 ### 1. Install the Package
 
 ```bash
-pip install git+https://github.com/Morteza-Khazaei/inversion.git
+pip install git+https://github.com/Morteza-Khazaei/nitropulse.git
 ```
 
 ### 2. Set up Google Earth Engine
@@ -93,16 +93,10 @@ earthengine authenticate
 
 ### 3. Basic Usage
 
-Run the complete inversion workflow with default settings:
+Run the full workflow. This will export data to your Google Drive, which you must then download manually to your workspace.
 
 ```bash
-python -m inversion --auto-download --gee-project-id your-gcp-project
-```
-
-Or if you have the CLI script directly:
-
-```bash
-python inversion.py --auto-download --gee-project-id your-gcp-project
+nitropulse run --roi-asset-id <your-roi-asset> --gee-project-id <your-gcp-project-id>
 ```
 
 ### 4. Process Specific Stations
@@ -133,10 +127,10 @@ python -m inversion --workspace-dir ./data \
 
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
-| `--workspace-dir` | str | `./assets` | Workspace directory for data and outputs |
-| `--auto-download` | flag | False | Auto download Sentinel-1 data via GEE |
+| `--workspace-dir` | str | `~/.nitropulse` | Workspace directory for data and outputs |
+| `--roi-asset-id` | str | **Required** | GEE asset ID for the Region of Interest. |
 | `--stations` | list | All RISMA stations | Station IDs to process (space-separated) |
-| `--gee-project-id` | str | None | Google Earth Engine project ID |
+| `--gee-project-id` | str | **Required** | Google Earth Engine project ID. |
 
 ### Data Parameters
 
@@ -145,7 +139,6 @@ python -m inversion --workspace-dir ./data \
 | `--buffer-distance` | int | 15 | Buffer distance for S1 data (meters) |
 | `--start-date` | str | `2010-01-01` | Start date (YYYY-MM-DD) |
 | `--end-date` | str | `2024-01-01` | End date (YYYY-MM-DD) |
-| `--roi-asset-id` | str | None | Region of interest asset ID in GEE |
 
 ### Inversion Parameters
 
@@ -166,10 +159,10 @@ You can specify individual stations or use the default (all stations):
 
 ```bash
 # Process specific stations
-python -m inversion --stations MB1 MB5 MB10
+nitropulse run --stations RISMA_MB1 RISMA_MB5 --roi-asset-id <your-roi-asset> --gee-project-id <your-gcp-project-id>
 
 # Process all stations (default)
-python -m inversion --auto-download
+nitropulse run --roi-asset-id <your-roi-asset> --gee-project-id <your-gcp-project-id>
 ```
 
 ## Workflow Steps
@@ -208,7 +201,7 @@ The package generates several output files in the `outputs/` directory:
 You can specify different radiative transfer models:
 
 ```bash
-python -m inversion --models '{"RT_s": "PRISM2", "RT_v": "WCM"}'
+nitropulse inversion --models '{"RT_s": "PRISM2", "RT_v": "WCM"}'
 ```
 
 ### Feature Selection
@@ -216,7 +209,7 @@ python -m inversion --models '{"RT_s": "PRISM2", "RT_v": "WCM"}'
 Customize the features used for machine learning:
 
 ```bash
-python -m inversion --features SSM VWC roughness lai
+nitropulse modeling --features SSM vvs s
 ```
 
 ## Google Earth Engine Setup
@@ -281,11 +274,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 If you use this package in your research, please cite:
 
 ```bibtex
-@software{sar_inversion_package,
-  title={SAR Backscatter Inversion Package},
+@software{nitropulse,
+  title={Nitropulse: A precision tool for mapping nitrous oxide (N₂O) emission pulses in agricultural landscapes},
   author={Morteza Khazaei},
   year={2024},
-  url={https://github.com/Morteza-Khazaei/inversion}
+  url={https://github.com/Morteza-Khazaei/nitropulse}
 }
 ```
 

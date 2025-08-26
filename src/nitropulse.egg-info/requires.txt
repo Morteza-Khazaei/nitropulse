@@ -1,0 +1,8 @@
+pandas
+seaborn
+scipy
+ipykernel
+earthengine-api
+geemap
+RISMA
+tqdm

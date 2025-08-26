@@ -27,11 +27,9 @@ dependencies = [
     "scipy",
     "ipykernel",
     "earthengine-api",
-    "gdown",
-    "google-api-python-client",
-    "google-auth-oauthlib",
     "geemap",
-    "RISMA"
+    "RISMA",
+    "tqdm"
 ]
 [project.scripts]
-nitropulse = "nitropulse.cli:main"
+nitropulse = "nitropulse.core:main"
