@@ -13,44 +13,65 @@ class S1Data:
     """
     Class to handle S1 soil data processing.
     """
-    def __init__(self, workspace_dir, s1_dir='S1_CSV_files', auto_download=False):
+    def __init__(self, workspace_dir, s1_gdrive_folder='nitropulse_S1_exports', auto_download=False):
         """
         Initialize the S1Data class.
+
+        Args:
+            workspace_dir (str): The path to the main workspace directory.
+            s1_gdrive_folder (str): The name of the folder in Google Drive for GEE exports.
+                                    This should be a name, NOT a path.
+            auto_download (bool): Flag to automatically download files from Google Drive.
         """
-        inputs_dir = os.path.join(workspace_dir, 'inputs')
-        os.makedirs(inputs_dir, exist_ok=True)
+        # Define the local directory path for storing S1 CSV files.
+        self.s1_dir = os.path.join(workspace_dir, 'inputs', 'S1_CSV_files')
+        os.makedirs(self.s1_dir, exist_ok=True)
+        print(f"Local directory for S1 data: {self.s1_dir}")
 
-        for folder in os.listdir(inputs_dir):
-            if os.path.isdir(os.path.join(inputs_dir, folder)) and 'S1_CSV' in folder:
-                print(f"Found GEE folder: {folder}")
-                s1_dir = os.path.join(inputs_dir, s1_dir)
-
-        # Check if risma_dir exits
-        if not os.path.exists(s1_dir):
-            os.makedirs(s1_dir)
-        else:
-            print(f"S1_CSV folder already exists: {s1_dir}")
-        self.s1_dir = s1_dir 
         self.workspace_dir = workspace_dir
         
-        self.s1_google_drive_dir = s1_dir
+        # This is the folder name in Google Drive for GEE exports. It must not be a path.
+        self.s1_google_drive_dir = s1_gdrive_folder
         self.auto_download = auto_download
 
     
-    def download_S1_data(self, stations=None, buffer_distance=15, start_date='2010-01-01', end_date='2024-01-01', gee_project_id=None, roi_asset_id=None):
+    def download_S1_data(self, stations=None, buffer_distance=15, 
+                         start_date='2010-01-01', end_date='2024-01-01', 
+                         gee_project_id=None, roi_asset_id=None):
         """
         Download Sentinel-1 data for specified stations and process it.
         This method processes Sentinel-1 data for each station in the specified list.
         It applies various image processing techniques, including edge masking, conversion to power, application of the Refined Lee filter, conversion to dB, and image enhancement.
         The processed images are then exported to Google Drive as CSV files.
         """
-
+        # Check inputs
+        if gee_project_id is None or roi_asset_id is None:
+            print("❌ gee_project_id and roi_asset_id must be provided.")
+            return
+        if buffer_distance < 0:
+            print("❌ buffer_distance must be a non-negative value.")
+            return
+        if not isinstance(start_date, str) or not isinstance(end_date, str):
+            print("❌ start_date and end_date must be strings in 'YYYY-MM-DD' format.")
+            return
+        # if start_date >= end_date:
+        #     print("❌ start_date must be earlier than end_date.")
+        #     return
+        if not isinstance(buffer_distance, (int, float)):
+            print("❌ buffer_distance must be a numeric value.")
+            return
+        if not isinstance(stations, (list, type(None))):
+            print("❌ stations must be a list of station IDs or None.")
+            return
+        
+         # Default stations if none provided
         if stations is None:
             stations = ['MB1', 'MB2', 'MB3', 'MB4', 'MB5', 'MB6', 'MB7', 'MB8', 'MB9', 'MB10', 'MB11', 'MB12', 'MB13', 'MB14', 'MB15',]  # Default station if none provided
         
         # Initialize Earth Engine
         try:
-            ee.Initialize(project=gee_project_id, opt_url='https://earthengine-highvolume.googleapis.com')
+            ee.Authenticate()
+            ee.Initialize(project=gee_project_id)
             print(ee.String('Hello from the Earth Engine servers!').getInfo())
         except Exception as e:
             print(f"❌ Could not initialize Earth Engine. Please run 'earthengine authenticate' first. Error: {e}")
@@ -60,7 +81,8 @@ class S1Data:
         roi = ee.FeatureCollection(roi_asset_id)
 
         # Loop through each station ID in the list
-        for station_id in tqdm(stations, desc="Exporting S1 data from GEE"):
+        pbar_stations = tqdm(stations, desc="Exporting S1 data from GEE")
+        for station_id in pbar_stations:
 
             fname = f'S1_Backscatter_RISMA_{station_id}_{start_date.split("-")[0]}_to_{end_date.split("-")[0]}_buffer{buffer_distance}m'
             file_path = os.path.join(self.s1_dir, f'{fname}.csv')
@@ -71,18 +93,7 @@ class S1Data:
                 continue  # Skip to the next station if the file already exists
             else:
                 print(f"The file '{file_path}' does not exist. \n\tProceeding with download process for {fname}.")
-
-                if self.auto_download:
-                    print('Running on local machine detected!')
-                    print(f'Automatic downloading from Google Drive to {self.s1_dir}.')
-
-                    # Authenticate and get the service
-                    print('Authenticating with Google Drive...')
-                    service = get_service(path=os.path.join(self.workspace_dir, 'config', 'gdrive'))
-
-                    # Create the folder in Google Drive if it doesn't exist
-                    folder_id = create_folder(service, self.s1_google_drive_dir)
-                    make_folder_public(service, folder_id)
+                pbar_stations.set_description(f"Exporting S1 for {station_id}")
 
                 # Define the region of interest (ROI) using the station ID and buffer distance
                 geom_buffer = roi.filter(ee.Filter.eq('Station ID', station_id)).geometry().buffer(buffer_distance)
@@ -142,28 +153,26 @@ class S1Data:
                 task.start()
                 print(f'RISMA Stations {station_id}: Export task started with ID: {task.id}')
 
-                status = task.status()
-                state = status['state'].lower()
-                previous_state = None  # Variable to store the previous state
-                while state not in ['completed', 'failed', 'cancelled']:
-                    
-                    if state != previous_state:
-                        print(f'\tProgress: Task is {state} on the GEE server.')
-                        previous_state = state
-                    
-                    time.sleep(15) # Sleep for 15 seconds
+                # Monitor task progress with a progress bar
+                with tqdm(total=None, desc=f"GEE Task: PENDING", unit=" checks", leave=False) as pbar_task:
                     status = task.status()
                     state = status['state'].lower()
-                
-                if state == 'completed':
-                    print(f'\tProgress: Task is {state}.')
+                    while state not in ['completed', 'failed', 'cancelled']:
+                        pbar_task.set_description(f"GEE Task for {station_id}: {state.upper()}")
+                        time.sleep(15)  # Sleep for 15 seconds
+                        status = task.status()
+                        state = status['state'].lower()
+                        pbar_task.update(1)
+
+                if status['state'] == 'COMPLETED':
+                    print(f"\n\tProgress: Task for {station_id} is {status['state']}.")
                     if 'destination_uris' not in status or not status['destination_uris']:
                         print(f"❌ GEE task completed but no destination URI found for station {station_id}.")
                         continue
                     fid = status['destination_uris'][0].split('/')[-1]
                 else:
                     error_message = status.get('error_message', 'No error message provided.')
-                    print(f"❌ GEE task for station {station_id} did not complete successfully. State: {state}. Error: {error_message}")
+                    print(f"❌ GEE task for station {station_id} did not complete successfully. State: {status['state']}. Error: {error_message}")
                     continue
 
             if not self.in_colab_shell():
@@ -201,9 +210,11 @@ class S1Data:
 
         # Loop through each file in the directory
         file_list = sorted(os.listdir(self.s1_dir), key=lambda x:int(x.split('_')[3][2:]))
-        for filename in tqdm(file_list, desc="Loading S1 files"):
+        pbar = tqdm(file_list, desc="Loading S1 files")
+        for filename in pbar:
             if filename.endswith(".csv"):  # Check if the file is a CSV file
                 station_name = filename.split('_')[3]
+                pbar.set_description(f"Loading {filename}")
                 filepath = os.path.join(self.s1_dir, filename)
                 df_S1 = self.read_S1_sigma_csv(filepath, station_name)
 

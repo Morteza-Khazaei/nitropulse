@@ -38,6 +38,10 @@ class BBCH:
 
 
     def run(self):
+        pheno_df = self.get_pheno_df()
+        return pheno_df
+
+    def get_pheno_df(self):
         
         # Merge 'grouped' and 'df_RISMA_asc' based on 'year' and 'doy'
         merged_df = pd.merge(self.df_risma, self.df_S1, on=['year', 'doy', 'op', 'Station'], how='inner')
@@ -116,3 +120,5 @@ class BBCH:
             return None
         else:
             return bbch
+
+    

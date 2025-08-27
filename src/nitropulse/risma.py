@@ -13,25 +13,14 @@ class RismaData:
     """
     Class to handle Risma soil data processing.
     """
-    def __init__(self, workspace_dir, risma_dir='RISMA_CSV_files'):
+    def __init__(self, workspace_dir):
         """
         Initialize the RismaData class.
         """
-        # Automatically find the RISMA_CSV folder in the workspace directory
-        workspace_dir = os.path.join(workspace_dir, 'inputs')
-        os.makedirs(workspace_dir, exist_ok=True)
-
-        for folder in os.listdir(workspace_dir):
-            if os.path.isdir(os.path.join(workspace_dir, folder)) and folder.startswith('RISMA_CSV'):
-                print(f"Found RISMA_CSV folder: {folder}")
-                risma_dir = os.path.join(workspace_dir, folder)
-        
-        # Check if risma_dir exits
-        if not os.path.exists(risma_dir):
-            os.makedirs(risma_dir)
-        else:
-            print(f"RISMA_CSV folder already exists: {risma_dir}")
-        self.risma_dir = risma_dir
+        # Define the local directory path for storing RISMA CSV files.
+        self.risma_dir = os.path.join(workspace_dir, 'inputs', 'RISMA_CSV_files')
+        os.makedirs(self.risma_dir, exist_ok=True)
+        print(f"Local directory for RISMA data: {self.risma_dir}")
         self.df_texture = self.load_stations_texture(depth=5)
     
     def download_risma_data(self, out_dir, stations, parameters, sensors, depths, start_date, end_date):
@@ -66,8 +55,10 @@ class RismaData:
         
         # groupby datasets based on loc_id
         gp_df = datasets.groupby('loc_id')
-        for station, df in tqdm(gp_df, desc="Downloading RISMA data"):
+        pbar = tqdm(gp_df, desc="Downloading RISMA data")
+        for station, df in pbar:
             fname = os.path.join(out_dir, f'{station}_{start_date.split("-")[0]}_to_{end_date.split("-")[0]}.csv')
+            pbar.set_description(f"Downloading for {station}")
 
             # Check if file already exits
             if os.path.exists(fname):
@@ -99,9 +90,11 @@ class RismaData:
 
         # Loop through each file in the directory
         file_list = sorted(os.listdir(self.risma_dir), key=lambda x:int(x.split('_')[1][2:]))
-        for filename in tqdm(file_list, desc="Loading RISMA files"):
+        pbar = tqdm(file_list, desc="Loading RISMA files")
+        for filename in pbar:
             if filename.endswith(".csv"):  # Check if the file is a CSV file
                 station_name = filename.split('_')[1]
+                pbar.set_description(f"Loading {filename}")
                 filepath = os.path.join(self.risma_dir, filename)
                 df_RISMA_asc = self.read_risma_bulk_csv(filepath, station_name, S1_lot='18:30')
                 df_RISMA_desc = self.read_risma_bulk_csv(filepath, station_name, S1_lot='06:30')

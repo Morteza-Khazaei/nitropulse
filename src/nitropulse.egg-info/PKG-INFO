@@ -125,55 +125,83 @@ Run the full workflow. This will export data to your Google Drive, which you mus
 nitropulse run --roi-asset-id <your-roi-asset> --gee-project-id <your-gcp-project-id>
 ```
 
-### 4. Process Specific Stations
+## Commands
+
+### `nitropulse run`
+
+Runs the complete workflow, including data download, phenology modeling, inversion, and machine learning model training.
 
 ```bash
-python -m inversion --stations MB1 MB2 MB3 \
-                   --auto-download \
-                   --gee-project-id your-project-id
+nitropulse run [OPTIONS]
 ```
 
-### 5. Custom Date Range and Parameters
+**Arguments:**
+- `--workspace-dir`: Workspace directory for all data and outputs. Default: `~/.nitropulse`.
+- `--stations`: List of station IDs to process. Default: All RISMA stations.
+- `--buffer-distance`: Buffer distance for S1 data (meters). Default: `15`.
+- `--start-date`: Start date for data retrieval (YYYY-MM-DD). Default: `2010-01-01`.
+- `--end-date`: End date for data retrieval (YYYY-MM-DD). Default: `2024-01-01`.
+- `--roi-asset-id`: **Required**. GEE asset ID for the Region of Interest.
+- `--gee-project-id`: **Required**. Google Earth Engine project ID.
+- `--fghz`: Frequency in GHz for inversion. Default: `5.4`.
+- `--models`: RT models in JSON format. Default: `{"RT_s": "PRISM1", "RT_v": "Diff"}`.
+- `--acftype`: ACF type for AIEM model. Default: `exp`.
+- `--features`: Feature list for ML models. Default: `['SSM', 'vvs', 's']`.
+
+### `nitropulse download`
+
+Downloads RISMA and Sentinel-1 data.
 
 ```bash
-python -m inversion --workspace-dir ./data \
-                   --auto-download \
-                   --stations MB1 MB2 MB3 MB4 \
-                   --buffer-distance 20 \
-                   --start-date 2020-01-01 \
-                   --end-date 2023-12-31 \
-                   --gee-project-id your-project-id \
-                   --features SSM vvs s \
-                   --fghz 5.4
+nitropulse download [OPTIONS]
 ```
 
-## Command Line Arguments
+**Arguments:**
+- `--workspace-dir`: Workspace directory.
+- `--stations`: List of station IDs.
+- `--buffer-distance`: Buffer distance for S1 data.
+- `--start-date`: Start date for data.
+- `--end-date`: End date for data.
+- `--roi-asset-id`: **Required**. GEE asset ID for the Region of Interest.
+- `--gee-project-id`: **Required**. Google Earth Engine project ID for S1 data download.
 
-### Core Options
+### `nitropulse phenology`
 
-| Argument | Type | Default | Description |
-|----------|------|---------|-------------|
-| `--workspace-dir` | str | `~/.nitropulse` | Workspace directory for data and outputs |
-| `--roi-asset-id` | str | **Required** | GEE asset ID for the Region of Interest. |
-| `--stations` | list | All RISMA stations | Station IDs to process (space-separated) |
-| `--gee-project-id` | str | **Required** | Google Earth Engine project ID. |
+Runs the phenology model.
 
-### Data Parameters
+```bash
+nitropulse phenology [OPTIONS]
+```
 
-| Argument | Type | Default | Description |
-|----------|------|---------|-------------|
-| `--buffer-distance` | int | 15 | Buffer distance for S1 data (meters) |
-| `--start-date` | str | `2010-01-01` | Start date (YYYY-MM-DD) |
-| `--end-date` | str | `2024-01-01` | End date (YYYY-MM-DD) |
+**Arguments:**
+- `--workspace-dir`: Workspace directory.
 
-### Inversion Parameters
+### `nitropulse inversion`
 
-| Argument | Type | Default | Description |
-|----------|------|---------|-------------|
-| `--fghz` | float | 5.4 | Frequency in GHz for inversion |
-| `--models` | str | `{"RT_s": "PRISM1", "RT_v": "Diff"}` | RT models (JSON format) |
-| `--acftype` | str | `exp` | ACF type for AIEM model |
-| `--features` | list | `['SSM', 'vvs', 's']` | Feature list for ML models |
+Runs the inversion algorithm.
+
+```bash
+nitropulse inversion [OPTIONS]
+```
+
+**Arguments:**
+- `--workspace-dir`: Workspace directory.
+- `--fghz`: Frequency in GHz.
+- `--models`: RT models in JSON format.
+- `--acftype`: ACF type for AIEM model.
+
+### `nitropulse modeling`
+
+Trains ensemble models and optionally deploys them to Google Earth Engine.
+
+```bash
+nitropulse modeling [OPTIONS]
+```
+
+**Arguments:**
+- `--workspace-dir`: Workspace directory.
+- `--features`: Feature list for ML models.
+- `--gee-project-id`: Google Earth Engine project ID for model deployment. If not provided, models are not deployed.
 
 ## Available RISMA Stations
 
@@ -227,7 +255,7 @@ The package generates several output files in the `outputs/` directory:
 You can specify different radiative transfer models:
 
 ```bash
-nitropulse inversion --models '{"RT_s": "PRISM2", "RT_v": "WCM"}'
+nitropulse run --models '{"RT_s": "PRISM2", "RT_v": "WCM"}'
 ```
 
 ### Feature Selection
@@ -235,7 +263,7 @@ nitropulse inversion --models '{"RT_s": "PRISM2", "RT_v": "WCM"}'
 Customize the features used for machine learning:
 
 ```bash
-nitropulse modeling --features SSM vvs s
+nitropulse run --features SSM vvs s
 ```
 
 ## Google Earth Engine Setup
@@ -246,7 +274,7 @@ nitropulse modeling --features SSM vvs s
 4. Provide your project ID when running the CLI
 
 ```bash
-python -m inversion --gee-project-id your-gcp-project-id
+nitropulse run --gee-project-id your-gcp-project-id
 ```
 
 ## Troubleshooting

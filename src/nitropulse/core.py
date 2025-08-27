@@ -77,12 +77,14 @@ def run_inversion(args):
     pheno_df_path = os.path.join(args.workspace_dir, 'outputs', 'pheno_df.csv')
     if not os.path.exists(pheno_df_path):
         print(f"Phenology output file not found at {pheno_df_path}")
+        print("Please run the 'phenology' command first.")
         return
-    
+
     import pandas as pd
     pheno_df = pd.read_csv(pheno_df_path)
 
     inv = Inverse(args.workspace_dir, fGHz=args.fghz, models=models_dict, acftype=args.acftype)
+
     inv_df = inv.run(pheno_df)
 
     output_file = os.path.join(args.workspace_dir, 'outputs', 'inv_df.csv')
@@ -115,18 +117,6 @@ def run_modeling(args):
     else:
         print('⚠️  No GEE project ID provided, skipping upload to GEE.')
 
-def run_workflow(args):
-    """
-    Run the complete inversion workflow.
-    """
-    print("🚀 Starting full inversion workflow...")
-    run_download(args)
-    run_phenology(args)
-    run_inversion(args)
-    run_modeling(args)
-    print("✅ Full workflow completed successfully!")
-
-
 def setup_workspace(workspace_dir):
     """
     Ensures the workspace directory and its necessary subdirectories and
@@ -135,7 +125,7 @@ def setup_workspace(workspace_dir):
     print(f"Verifying workspace at: {workspace_dir}")
 
     # Create standard subdirectories
-    subdirs = ['inputs', 'outputs', 'models', 'config/gdd']
+    subdirs = ['inputs', 'outputs', 'models', 'config/gdd', 'config/inversion']
     for subdir in subdirs:
         os.makedirs(os.path.join(workspace_dir, subdir), exist_ok=True)
 
@@ -144,6 +134,8 @@ def setup_workspace(workspace_dir):
     config_templates = [
         'config/gdd/crop_base_temp.json',
         'config/gdd/crop_gdd_thresh.json',
+        'config/gdd/crop_bbch_k_b_coff.json',
+        'config/inversion/crop_inversion_bounds.json',
     ]
 
     for template_path in config_templates:
@@ -155,7 +147,7 @@ def setup_workspace(workspace_dir):
                 if os.path.exists(source_path):
                     print(f"Initializing config file: {dest_path}")
                     shutil.copy(source_path, dest_path)
-            except (ModuleNotFoundError, KeyError):
+            except (ModuleNotFoundError, KeyError, FileNotFoundError):
                 # This can happen in a dev environment or if the resource doesn't exist.
                 print(f"⚠️ Could not find packaged resource for '{template_path}'. Please ensure it exists.")
     
@@ -179,30 +171,15 @@ def create_parser():
 
     subparsers = parser.add_subparsers(dest='command', required=True)
 
-    # --- Run All Command ---
-    run_parser = subparsers.add_parser('run', help='Run the full workflow from download to modeling.')
-    run_parser.add_argument('--workspace-dir', default=default_workspace, help='Workspace directory for all data and outputs.')
-    run_parser.add_argument('--stations', nargs='*', default=risma_stations, help='List of station IDs to process.')
-    run_parser.add_argument('--buffer-distance', type=int, default=15, help='Buffer distance for S1 data (meters).')
-    run_parser.add_argument('--start-date', default='2010-01-01', help='Start date for data retrieval (YYYY-MM-DD).')
-    run_parser.add_argument('--end-date', default='2024-01-01', help='End date for data retrieval (YYYY-MM-DD).')
-    run_parser.add_argument('--roi-asset-id', required=True, help='GEE asset ID for the Region of Interest (e.g., users/user/roi).')
-    run_parser.add_argument('--gee-project-id', required=True, help='Google Earth Engine project ID.')
-    run_parser.add_argument('--fghz', type=float, default=5.4, help='Frequency in GHz for inversion.')
-    run_parser.add_argument('--models', default='{"RT_s": "PRISM1", "RT_v": "Diff"}', help='RT models in JSON format.')
-    run_parser.add_argument('--acftype', default='exp', help='ACF type for AIEM model.')
-    run_parser.add_argument('--features', nargs='*', default=['SSM', 'vvs', 's'], help='Feature list for ML models.')
-    run_parser.set_defaults(func=run_workflow)
-
     # Download command
     download_parser = subparsers.add_parser('download', help='Download RISMA and Sentinel-1 data')
-    download_parser.add_argument('--workspace-dir', default=default_workspace, help='Workspace directory')
-    download_parser.add_argument('--stations', nargs='*', default=risma_stations, help='List of station IDs')
+    download_parser.add_argument('--workspace-dir', default=default_workspace, type=str, help='Workspace directory')
+    download_parser.add_argument('--stations', nargs='*', default=risma_stations, type=str, help='List of station IDs')
     download_parser.add_argument('--buffer-distance', type=int, default=15, help='Buffer distance for S1 data')
-    download_parser.add_argument('--start-date', default='2010-01-01', help='Start date for data')
-    download_parser.add_argument('--end-date', default='2024-01-01', help='End date for data')
-    download_parser.add_argument('--roi-asset-id', required=True, help='GEE asset ID for the Region of Interest')
-    download_parser.add_argument('--gee-project-id', required=True, help='Google Earth Engine project ID for S1 data download')
+    download_parser.add_argument('--start-date', default='2010-01-01', type=str, help='Start date for data')
+    download_parser.add_argument('--end-date', default='2024-01-01', type=str, help='End date for data')
+    download_parser.add_argument('--roi-asset-id', required=True, type=str, help='GEE asset ID for the Region of Interest')
+    download_parser.add_argument('--gee-project-id', required=True, type=str, help='Google Earth Engine project ID for S1 data download')
     download_parser.set_defaults(func=run_download)
 
     # Phenology command

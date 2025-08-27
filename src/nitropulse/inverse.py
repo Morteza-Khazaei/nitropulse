@@ -38,17 +38,17 @@ class Inverse:
         self.crop_inversion_bounds = crop_inversion_bounds
 
 
-    def run(self, df):
+    def run(self, pheno_df):
         # Implementation of the run method will go here
-        df = df.groupby(['op', 'year', 'doy', 'angle'], group_keys=False).apply(lambda x: self.inversion(x, self.crop_inversion_bounds))
+        pheno_df = pheno_df.groupby(['op', 'year', 'doy', 'angle'], group_keys=False).apply(lambda x: self.inversion(x, self.crop_inversion_bounds))
 
         # drop na
-        df.dropna(inplace=True)
+        pheno_df.dropna(inplace=True)
 
         # drop rows with vvs lower than -50
-        df = df[df.vvs > -50]
+        pheno_df = pheno_df[pheno_df.vvs > -50]
 
-        return df
+        return pheno_df
 
 
     def to_power(self, dB):
