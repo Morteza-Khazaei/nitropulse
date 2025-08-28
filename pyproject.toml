@@ -30,7 +30,8 @@ dependencies = [
     "geemap",
     "RISMA",
     "tqdm",
-    "joblib"
+    "joblib",
+    "gdown"
 ]
 [project.scripts]
 nitropulse = "nitropulse.core:main"

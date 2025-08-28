@@ -5,9 +5,6 @@ import gdown
 import pandas as pd
 from tqdm.auto import tqdm
 
-from nitropulse.gdrive import get_service, create_folder, make_folder_public, get_shareable_link
-
-
 
 class S1Data:
     """
@@ -200,8 +197,9 @@ class S1Data:
                 # If running in Google Colab, download the folder from Google Drive
                 # Download from Google Drive
                 if self.auto_download:
-                    # Download the folder using gdown
-                    gdown.download_folder(id=fid, quiet=False, use_cookies=False, output=self.s1_dir)
+                    # Download the exported file using its ID.
+                    # The output path is the full path to the destination file.
+                    gdown.download(id=fid, output=file_path, quiet=False)
                 
                 else:
                     print('Running on local machine detected!')

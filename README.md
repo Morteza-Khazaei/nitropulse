@@ -14,7 +14,7 @@
 <p align="center">
     <a href="https://github.com/Morteza-Khazaei/nitropulse/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License"></a>
     <a href="#"><img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python version"></a>
-    <a href="https://github.com/Morteza-Khazaei/nitropulse/actions"><img src="https://github.com/Morteza-Khazaei/nitropulse/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+    <!-- <a href="https://github.com/Morteza-Khazaei/nitropulse/actions"><img src="https://github.com/Morteza-Khazaei/nitropulse/actions/workflows/ci.yml/badge.svg" alt="CI"></a> -->
 </p>
 
 ---

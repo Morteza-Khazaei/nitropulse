@@ -4,6 +4,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 import ee
 import re
+import csv
 import os
 import geemap
 import numpy as np
@@ -112,14 +113,19 @@ class RegressionRF:
         return re.sub(r'\s+', ' ', tree)  # Replace multiple spaces with a single space
     
     def upload_rf_to_gee(self, tranied_rfs, gee_project_id, save_dectree=False):
-        if not ee.data._credentials:
+        # Initialize the Earth Engine API.
+        # This is done here to ensure it's initialized even if this module is run standalone.
+        try:
+            ee.Initialize(project=gee_project_id)
+        except Exception:
+            # If the above fails (e.g., in some environments), geemap provides a robust fallback.
             geemap.ee_initialize(project=gee_project_id)
-            print("Earth Engine initialized.")
-        else:
-            print("Earth Engine already initialized.")
-        
-        user_id = geemap.ee_user_id()
-        user_id = '/'.join(user_id.split('/')[:-1])
+
+        # Get the user's GEE asset root folder ID directly using the ee API.
+        try:
+            asset_root = ee.data.getAssetRoots()[0]['id']
+        except Exception as e:
+            raise Exception(f"Could not retrieve GEE asset root. Please check authentication. Details: {e}")
 
         for var, model in tqdm(tranied_rfs.items(), desc="Uploading models to GEE"):
             n_estimators = model.n_estimators
@@ -127,10 +133,11 @@ class RegressionRF:
             rfname = f"ensemble_trees_{var}_n{n_estimators}_md{mdepth}"
             feature_names = model.feature_names_in_
 
-            asset_id = '/'.join([user_id, rfname])
+            asset_id = f"{asset_root}/{rfname}"
 
-            # convert the estimator into a list of strings
-            # this function also works with the ensemble.ExtraTrees estimator
+            # This is the critical function from geemap that performs the complex
+            # serialization of the scikit-learn model into a GEE-compatible format.
+            # Re-implementing this would be a significant effort.
             trees = ml.rf_to_strings(model, feature_names, processes=32, output_mode='REGRESSION')
 
             cleaned_trees = [self.__clean_tree(tree) for tree in trees]
@@ -146,6 +153,11 @@ class RegressionRF:
 
             if save_dectree:
                 file_path = os.path.join(self.workspace_dir, 'outputs', rfname + '.csv')
-                ml.trees_to_csv(trees, file_path)
+                # Replaced geemap.ml.trees_to_csv with standard Python file I/O
+                with open(file_path, 'w', newline='') as f:
+                    writer = csv.writer(f)
+                    writer.writerow(['tree'])
+                    for tree_string in trees:
+                        writer.writerow([tree_string])
         
         return None
