@@ -454,7 +454,7 @@ class S1Data:
 
 if __name__ == "__main__":
     # Example usage
-    s1 = S1Data(workspace_dir='./assets', auto_download=True)
+    s1 = S1Data(workspace_dir='./temp_workspace', auto_download=True)
     # s1.download_S1_data(stations=['MB1', ], buffer_distance=20, start_date='2010-01-01', end_date='2024-01-01', gee_project_id='ee-mortezakhazaei1370', roi_asset_id='RISMA_Stations_Canada')
     
     df = s1.load_df()

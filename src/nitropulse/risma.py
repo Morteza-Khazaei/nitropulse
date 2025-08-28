@@ -367,7 +367,7 @@ class RismaData:
 
 if __name__ == "__main__":
     # Example usage
-    workspace_dir = './assets'
+    workspace_dir = './temp_workspace'
     
     risma_data = RismaData(workspace_dir)
     df_risma = risma_data.load_df()
