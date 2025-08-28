@@ -213,7 +213,7 @@ class Inverse:
                 vv_veg = vv - vv_soil
 
 
-            except:
+            except Exception:
                 d = np.nan
                 c = np.nan
                 s = np.nan
@@ -250,6 +250,3 @@ class Inverse:
         df_x['b'] = bs
 
         return df_x
-
-
-

@@ -6,3 +6,4 @@ earthengine-api
 geemap
 RISMA
 tqdm
+joblib

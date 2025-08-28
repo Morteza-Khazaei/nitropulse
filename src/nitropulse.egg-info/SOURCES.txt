@@ -1,6 +1,7 @@
 LICENSE
 README.md
 pyproject.toml
+setup.py
 src/nitropulse/__init__.py
 src/nitropulse/core.py
 src/nitropulse/ensemble_rf.py
@@ -15,3 +16,7 @@ src/nitropulse.egg-info/dependency_links.txt
 src/nitropulse.egg-info/entry_points.txt
 src/nitropulse.egg-info/requires.txt
 src/nitropulse.egg-info/top_level.txt
+src/nitropulse/config/gdd/crop_base_temp.json
+src/nitropulse/config/gdd/crop_bbch_k_b_coff.json
+src/nitropulse/config/gdd/crop_gdd_thresh.json
+src/nitropulse/config/inversion/crop_inversion_bounds.json

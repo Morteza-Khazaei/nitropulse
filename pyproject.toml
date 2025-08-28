@@ -29,7 +29,8 @@ dependencies = [
     "earthengine-api",
     "geemap",
     "RISMA",
-    "tqdm"
+    "tqdm",
+    "joblib"
 ]
 [project.scripts]
 nitropulse = "nitropulse.core:main"

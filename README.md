@@ -1,61 +1,56 @@
 # nitropulse
 
-A precision tool for mapping nitrous oxide (N₂O) emission pulses in agricultural landscapes.
+<p align="center">
+  <a href="https://github.com/Morteza-Khazaei/nitropulse">
+    <!-- Add your logo here -->
+    <img src="https://via.placeholder.com/400x200.png?text=nitropulse" alt="nitropulse logo"/>
+  </a>
+</p>
+
+<p align="center">
+    <em>A precision tool for mapping nitrous oxide (N₂O) emission pulses in agricultural landscapes.</em>
+</p>
+
+<p align="center">
+    <a href="https://github.com/Morteza-Khazaei/nitropulse/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License"></a>
+    <a href="#"><img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python version"></a>
+    <a href="https://github.com/Morteza-Khazaei/nitropulse/actions"><img src="https://github.com/Morteza-Khazaei/nitropulse/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+</p>
+
+---
 
 ## Overview
 
-The inversion workflow consists of the following main steps:
+`nitropulse` is a command-line tool designed to process remote sensing and ground data to estimate key agricultural parameters. It integrates data from RISMA ground stations and Sentinel-1 satellites, runs biophysical models, and trains machine learning ensembles to map soil moisture and other properties at scale.
 
-### 1. Data Acquisition and Preparation
-- **RISMA Ground Measurements**:
-  - Downloads and prepares soil moisture and temperature data from RISMA stations.
-  - Stores all necessary CSV files in the `./assets/inputs/...` directory.
-- **Sentinel-1 Backscatter Data**:
-  - Retrieves Sentinel-1 backscatter data from Google Earth Engine (GEE).
-  - Applies spatial buffering around each RISMA station to a reliable time series of backscatter data for each station.
-
-### 2. Growing Degree Days (GDD) and Phenology Modeling
-- **GDD Calculation**:
-  - Calculates accumulated Growing Degree Days (GDD) from RISMA temperature data.
-- **BBCH Scale**:
-  - Uses GDD to compute the BBCH scale, generating a time series of crop growth stages.
-  - Estimates crop height per day of year (DOY), a critical parameter for vegetation radiative transfer modeling (RTM).
-
-### 3. Inversion Process
-- **Backscatter Separation**:
-  - Separates total backscatter from Sentinel-1 images into soil and vegetation components.
-- **Radiative Transfer Models**:
-  - Uses vegetation RTM and crop height data to accurately estimate soil and vegetation parameters.
-
-### 4. Machine Learning and Deployment
-- **Ensemble Model Training**:
-  - Trains and tests ensemble models to estimate:
-    - Bare soil backscatter
-    - Soil roughness
-    - Soil moisture
-- **Google Earth Engine Deployment**:
-  - Deploys trained models to the GEE platform for large-scale soil moisture estimation using Sentinel-1 backscatter images.
+The workflow consists of four main stages:
+1.  **Data Acquisition**: Downloads and prepares soil moisture/temperature data from RISMA stations and Sentinel-1 backscatter data from Google Earth Engine (GEE).
+2.  **Phenology Modeling**: Calculates Growing Degree Days (GDD) and uses them to model crop growth stages (BBCH scale), a critical input for radiative transfer modeling.
+3.  **Biophysical Inversion**: Separates the total backscatter signal into soil and vegetation components using radiative transfer models (e.g., AIEM, PRISM1) to retrieve physical parameters like soil roughness.
+4.  **Machine Learning & Deployment**: Trains Random Forest models to estimate soil moisture and other variables from backscatter data and deploys these models to GEE for large-scale application.
 
 ## Installation
 
 ### Dependencies
-
-The package automatically installs the following dependencies:
-
 - Python 3.8+
-- Google Earth Engine Python API
-- NumPy, Pandas, SciPy
-- scikit-learn
-- RISMA *developed during this project*
-- pyAIEM *developed during this project*
-- SSRT *developed during this project*
+- An active Google Earth Engine account.
 
-### Install from GitHub
-
+### 1. Authenticate with Google Earth Engine
+Before installation, you must authenticate your machine with GEE.
 ```bash
-# Install dependencies first if they are not on PyPI
-# pip install git+https://github.com/Morteza-Khazaei/AIEM.git
-# pip install git+https://github.com/Morteza-Khazaei/SSRT.git
+earthengine authenticate
+```
+
+### 2. Install Dependencies from GitHub
+`nitropulse` relies on several custom packages that must be installed directly from their GitHub repositories.
+```bash
+pip install git+https://github.com/Morteza-Khazaei/AIEM.git
+pip install git+https://github.com/Morteza-Khazaei/SSRT.git
+```
+
+### 3. Install `nitropulse`
+Install the latest version of `nitropulse` from GitHub.
+```bash
 pip install git+https://github.com/Morteza-Khazaei/nitropulse.git
 ```
 
@@ -122,22 +117,19 @@ nitropulse run [OPTIONS]
 - `--acftype`: ACF type for AIEM model. Default: `exp`.
 - `--features`: Feature list for ML models. Default: `['SSM', 'vvs', 's']`.
 
-### `nitropulse download`
+### `nitropulse download-risma`
 
-Downloads RISMA and Sentinel-1 data.
+Downloads ground station data from the RISMA network.
 
 ```bash
-nitropulse download [OPTIONS]
+nitropulse download-risma [OPTIONS]
 ```
 
 **Arguments:**
 - `--workspace-dir`: Workspace directory.
 - `--stations`: List of station IDs.
-- `--buffer-distance`: Buffer distance for S1 data.
 - `--start-date`: Start date for data.
 - `--end-date`: End date for data.
-- `--roi-asset-id`: **Required**. GEE asset ID for the Region of Interest.
-- `--gee-project-id`: **Required**. Google Earth Engine project ID for S1 data download.
 
 ### `nitropulse phenology`
 
@@ -220,7 +212,7 @@ The package generates several output files in the `outputs/` directory:
 
 - `pheno_df.csv`: Phenology model results with crop growth stages
 - `inv_df.csv`: Inversion results with estimated parameters
-- Various intermediate data files and model artifacts
+- `models/*.joblib`: Trained machine learning models are saved in the `models/` directory.
 
 ## Configuration
 

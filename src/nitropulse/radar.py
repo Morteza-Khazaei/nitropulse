@@ -54,9 +54,9 @@ class S1Data:
         if not isinstance(start_date, str) or not isinstance(end_date, str):
             print("❌ start_date and end_date must be strings in 'YYYY-MM-DD' format.")
             return
-        # if start_date >= end_date:
-        #     print("❌ start_date must be earlier than end_date.")
-        #     return
+        if start_date >= end_date:
+            print("❌ start_date must be earlier than end_date.")
+            return
         if not isinstance(buffer_distance, (int, float)):
             print("❌ buffer_distance must be a numeric value.")
             return
@@ -77,6 +77,13 @@ class S1Data:
             print(f"❌ Could not initialize Earth Engine. Please run 'earthengine authenticate' first. Error: {e}")
             return
 
+        # Add a check for the start date against Sentinel-1's launch
+        s1_launch_date = '2014-10-03'
+        if start_date < s1_launch_date:
+            print(f"⚠️  Warning: Provided start date ({start_date}) is before Sentinel-1's launch ({s1_launch_date}).")
+            print(f"Adjusting start date to {s1_launch_date} for the GEE query.")
+            start_date = s1_launch_date
+
         roi_asset_id = f'projects/{gee_project_id}/assets/{roi_asset_id}'
         roi = ee.FeatureCollection(roi_asset_id)
 
@@ -95,8 +102,12 @@ class S1Data:
                 print(f"The file '{file_path}' does not exist. \n\tProceeding with download process for {fname}.")
                 pbar_stations.set_description(f"Exporting S1 for {station_id}")
 
+                # The GEE asset likely uses the short station ID (e.g., 'MB1') instead of the full one ('RISMA_MB1').
+                # We extract the short ID for filtering but use the full ID for filenames.
+                short_station_id = station_id.split('_')[-1]
+
                 # Define the region of interest (ROI) using the station ID and buffer distance
-                geom_buffer = roi.filter(ee.Filter.eq('Station ID', station_id)).geometry().buffer(buffer_distance)
+                geom_buffer = roi.filter(ee.Filter.eq('Station ID', short_station_id)).geometry().buffer(buffer_distance)
 
                 # Combined function to add date and crop type efficiently
                 def enhance_image(image):
@@ -122,6 +133,16 @@ class S1Data:
                     .map(enhance_image)
 
                 S1 = ee.ImageCollection(S1.distinct('system:time_start'))
+
+                # Check if any images were found before proceeding
+                s1_size = S1.size().getInfo()
+                if s1_size == 0:
+                    print(f"❌ No Sentinel-1 images found for station '{station_id}'.")
+                    print("   Please check the following:")
+                    print(f"     1. Your ROI asset ('{roi_asset_id}') is correct and public.")
+                    print(f"     2. The ROI covers the station location.")
+                    print(f"     3. The date range ('{start_date}' to '{end_date}') is valid.")
+                    continue # Skip to the next station
 
                 desc = S1.filter(ee.Filter.eq('orbitProperties_pass', 'DESCENDING'))
                 asc = S1.filter(ee.Filter.eq('orbitProperties_pass', 'ASCENDING'))
@@ -213,10 +234,13 @@ class S1Data:
         pbar = tqdm(file_list, desc="Loading S1 files")
         for filename in pbar:
             if filename.endswith(".csv"):  # Check if the file is a CSV file
-                station_name = filename.split('_')[3]
+                # Extract the full station name (e.g., RISMA_MB1) from the filename
+                full_station_name = filename.split('_')[3]
+                # Use the short station name (e.g., MB1) to ensure consistency with RISMA data
+                short_station_name = full_station_name.split('_')[-1]
                 pbar.set_description(f"Loading {filename}")
                 filepath = os.path.join(self.s1_dir, filename)
-                df_S1 = self.read_S1_sigma_csv(filepath, station_name)
+                df_S1 = self.read_S1_sigma_csv(filepath, short_station_name)
 
                 list_of_dfs.append(df_S1)
         
