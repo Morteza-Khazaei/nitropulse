@@ -88,6 +88,17 @@ Runs the complete workflow from data download to model deployment. This is the r
 - `--roi-asset-id`: Your GEE asset ID for the Region of Interest (e.g., `users/username/roi_asset`).
 - `--gee-project-id`: Your Google Cloud Project ID associated with Earth Engine.
 
+**Optional Arguments:**
+- `--workspace-dir`: Workspace directory. Default: `~/.nitropulse`.
+- `--stations`: List of station IDs. Default: All RISMA stations.
+- `--buffer-distance`: Buffer distance for S1 data (meters). Default: `15`.
+- `--start-date`: Start date for data retrieval (YYYY-MM-DD). Default: `2015-01-01`.
+- `--end-date`: End date for data retrieval (YYYY-MM-DD). Default: `2024-01-01`.
+- `--fghz`: Frequency in GHz for inversion. Default: `5.4`.
+- `--models`: RT models in JSON format. Default: `{"RT_s": "PRISM1", "RT_c": "Diff"}`.
+- `--acftype`: ACF type for AIEM model. Default: `exp`.
+- `--features`: Feature list for ML models. Default: `['SSM', 'vvs', 's']`.
+
 ### Other Commands
 - `nitropulse download-risma`: Downloads only the RISMA ground station data.
 - `nitropulse download-s1`: Downloads only the Sentinel-1 backscatter data from GEE.

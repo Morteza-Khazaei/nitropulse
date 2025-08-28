@@ -234,7 +234,7 @@ def main():
     risma_stations = ['RISMA_MB1', 'RISMA_MB2', 'RISMA_MB3', 'RISMA_MB4', 'RISMA_MB5',
                       'RISMA_MB6', 'RISMA_MB7', 'RISMA_MB8', 'RISMA_MB9', 'RISMA_MB10',
                       'RISMA_MB11', 'RISMA_MB12', 'RISMA_MB13']
-    default_models_str = '{"RT_s": "PRISM1", "RT_v": "Diff"}'
+    default_models_str = '{"RT_s": "PRISM1", "RT_c": "Diff"}'
 
     # Parent parser for common arguments
     parent_parser = argparse.ArgumentParser(add_help=False)
