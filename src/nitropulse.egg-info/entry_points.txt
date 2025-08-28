@@ -1,2 +1,0 @@
-[console_scripts]
-nitropulse = nitropulse.core:main
