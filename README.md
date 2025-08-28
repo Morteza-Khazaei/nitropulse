@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://github.com/Morteza-Khazaei/nitropulse">
     <!-- Add your logo here -->
-    <img src="logo/nitropulse.png" alt="nitropulse logo"/>
+    <img src="https://raw.githubusercontent.com/Morteza-Khazaei/nitropulse/main/logo/nitropulse.png" alt="nitropulse logo" width="400"/>
   </a>
 </p>
 
@@ -14,7 +14,7 @@
 <p align="center">
     <a href="https://github.com/Morteza-Khazaei/nitropulse/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License"></a>
     <a href="#"><img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python version"></a>
-    <!-- <a href="https://github.com/Morteza-Khazaei/nitropulse/actions"><img src="https://github.com/Morteza-Khazaei/nitropulse/actions/workflows/ci.yml/badge.svg" alt="CI"></a> -->
+    <a href="https://github.com/Morteza-Khazaei/nitropulse/actions"><img src="https://github.com/Morteza-Khazaei/nitropulse/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
 ---
@@ -35,280 +35,103 @@ The workflow consists of four main stages:
 - Python 3.8+
 - An active Google Earth Engine account.
 
-### 1. Authenticate with Google Earth Engine
-Before installation, you must authenticate your machine with GEE.
+### 1. Install Google Cloud SDK
+The `earthengine` command is part of the Google Cloud SDK. Before you can authenticate, you must install it by following the official Google Cloud SDK installation instructions.
+
+After installation, initialize the SDK by running `gcloud init`.
+
+### 2. Authenticate with Google Earth Engine
+Once the Google Cloud SDK is installed, authenticate your machine with GEE.
 ```bash
 earthengine authenticate
 ```
 
-### 2. Install Dependencies from GitHub
+### 3. Install Dependencies from GitHub
 `nitropulse` relies on several custom packages that must be installed directly from their GitHub repositories.
 ```bash
 pip install git+https://github.com/Morteza-Khazaei/AIEM.git
 pip install git+https://github.com/Morteza-Khazaei/SSRT.git
 ```
 
-### 3. Install `nitropulse`
+### 4. Install `nitropulse`
 Install the latest version of `nitropulse` from GitHub.
 ```bash
 pip install git+https://github.com/Morteza-Khazaei/nitropulse.git
 ```
 
 ### For Development
-
-If you want to contribute or modify the package:
-
+If you want to contribute to or modify the package:
 ```bash
 git clone https://github.com/Morteza-Khazaei/nitropulse.git
 cd nitropulse
-pip install -e .
-```
-
-### Verify Installation
-
-After installation, verify the package is working:
-
-```bash
-python -c "import nitropulse; print('Installation successful!')"
+pip install -e .[test]
 ```
 
 ## Quick Start
+Run the entire workflow with a single command. This will download data, run all models, and save the outputs to a workspace directory (default: `~/.nitropulse`).
 
-### 1. Install the Package
-
-```bash
-pip install git+https://github.com/Morteza-Khazaei/nitropulse.git
-```
-
-### 2. Set up Google Earth Engine
+**Note**: The Sentinel-1 download process exports data to your Google Drive. You may need to manually download the exported folder to your workspace.
 
 ```bash
-earthengine authenticate
+nitropulse run \
+    --roi-asset-id "your/gee/asset/path" \
+    --gee-project-id "your-gcp-project-id"
 ```
 
-### 3. Basic Usage
-
-Run the full workflow. This will export data to your Google Drive, which you must then download manually to your workspace.
-
-```bash
-nitropulse run --roi-asset-id <your-roi-asset> --gee-project-id <your-gcp-project-id>
-```
-
-## Commands
+## CLI Commands
+`nitropulse` provides a modular, command-based interface. You can run the full workflow or individual steps. For a full list of options for any command, use the `--help` flag (e.g., `nitropulse run --help`).
 
 ### `nitropulse run`
+Runs the complete workflow from data download to model deployment. This is the recommended command for most users.
 
-Runs the complete workflow, including data download, phenology modeling, inversion, and machine learning model training.
+**Required Arguments:**
+- `--roi-asset-id`: Your GEE asset ID for the Region of Interest (e.g., `users/username/roi_asset`).
+- `--gee-project-id`: Your Google Cloud Project ID associated with Earth Engine.
 
-```bash
-nitropulse run [OPTIONS]
-```
+### Other Commands
+- `nitropulse download-risma`: Downloads only the RISMA ground station data.
+- `nitropulse download-s1`: Downloads only the Sentinel-1 backscatter data from GEE.
+- `nitropulse phenology`: Runs the phenology model.
+- `nitropulse inversion`: Runs the inversion algorithm.
+- `nitropulse modeling`: Trains ensemble models and optionally deploys them to GEE.
 
-**Arguments:**
-- `--workspace-dir`: Workspace directory for all data and outputs. Default: `~/.nitropulse`.
-- `--stations`: List of station IDs to process. Default: All RISMA stations.
-- `--buffer-distance`: Buffer distance for S1 data (meters). Default: `15`.
-- `--start-date`: Start date for data retrieval (YYYY-MM-DD). Default: `2010-01-01`.
-- `--end-date`: End date for data retrieval (YYYY-MM-DD). Default: `2024-01-01`.
-- `--roi-asset-id`: **Required**. GEE asset ID for the Region of Interest.
-- `--gee-project-id`: **Required**. Google Earth Engine project ID.
-- `--fghz`: Frequency in GHz for inversion. Default: `5.4`.
-- `--models`: RT models in JSON format. Default: `{"RT_s": "PRISM1", "RT_v": "Diff"}`.
-- `--acftype`: ACF type for AIEM model. Default: `exp`.
-- `--features`: Feature list for ML models. Default: `['SSM', 'vvs', 's']`.
-
-### `nitropulse download-risma`
-
-Downloads ground station data from the RISMA network.
-
-```bash
-nitropulse download-risma [OPTIONS]
-```
-
-**Arguments:**
-- `--workspace-dir`: Workspace directory.
-- `--stations`: List of station IDs.
-- `--start-date`: Start date for data.
-- `--end-date`: End date for data.
-
-### `nitropulse phenology`
-
-Runs the phenology model.
-
-```bash
-nitropulse phenology [OPTIONS]
-```
-
-**Arguments:**
-- `--workspace-dir`: Workspace directory.
-
-### `nitropulse inversion`
-
-Runs the inversion algorithm.
-
-```bash
-nitropulse inversion [OPTIONS]
-```
-
-**Arguments:**
-- `--workspace-dir`: Workspace directory.
-- `--fghz`: Frequency in GHz.
-- `--models`: RT models in JSON format.
-- `--acftype`: ACF type for AIEM model.
-
-### `nitropulse modeling`
-
-Trains ensemble models and optionally deploys them to Google Earth Engine.
-
-```bash
-nitropulse modeling [OPTIONS]
-```
-
-**Arguments:**
-- `--workspace-dir`: Workspace directory.
-- `--features`: Feature list for ML models.
-- `--gee-project-id`: Google Earth Engine project ID for model deployment. If not provided, models are not deployed.
-
-## Available RISMA Stations
-
-The package includes 13 RISMA stations in Manitoba, Canada:
-
-- `RISMA_MB1` through `RISMA_MB13`
-
-You can specify individual stations or use the default (all stations):
-
-```bash
-# Process specific stations
-nitropulse run --stations RISMA_MB1 RISMA_MB5 --roi-asset-id <your-roi-asset> --gee-project-id <your-gcp-project-id>
-
-# Process all stations (default)
-nitropulse run --roi-asset-id <your-roi-asset> --gee-project-id <your-gcp-project-id>
-```
-
-## Workflow Steps
-
-### 1. Data Preparation
-- Downloads RISMA ground-truth data (soil moisture, temperature)
-- Applies spatial buffering around station locations and retrieves Sentinel-1 backscatter data from Google Earth Engine
-
-### 2. Phenology Modeling
-- Runs BBCH phenology model to determine crop growth stages
-- Outputs phenology data to `outputs/pheno_df.csv`
-
-### 3. Inversion Process
-- Applies radiative transfer models (PRISM1, Diff)
-- Uses AIEM for surface scattering modeling
-- Estimates soil and vegetation parameters
-- Outputs inversion results to `outputs/inv_df.csv`
-
-### 4. Machine Learning
-- Trains Random Forest ensemble models
-- Uses specified features for parameter estimation
-- Uploads trained models to Google Earth Engine
-
-## Output Files
-
-The package generates several output files in the `outputs/` directory:
-
-- `pheno_df.csv`: Phenology model results with crop growth stages
-- `inv_df.csv`: Inversion results with estimated parameters
-- `models/*.joblib`: Trained machine learning models are saved in the `models/` directory.
-
-## Configuration
-
-### Custom Models
-
-You can specify different radiative transfer models:
-
-```bash
-nitropulse run --models '{"RT_s": "PRISM2", "RT_v": "WCM"}'
-```
-
-### Feature Selection
-
-Customize the features used for machine learning:
-
-```bash
-nitropulse run --features SSM vvs s
-```
-
-## Google Earth Engine Setup
-
-1. Create a Google Cloud Project
-2. Enable the Earth Engine API
-3. Authenticate using `earthengine authenticate`
-4. Provide your project ID when running the CLI
-
-```bash
-nitropulse run --gee-project-id your-gcp-project-id
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**Authentication Error**: Ensure you've authenticated with Google Earth Engine:
-```bash
-earthengine authenticate
-```
-
-**Memory Issues**: For large datasets, consider:
-- Processing fewer stations at once
-- Reducing the date range
-- Increasing buffer distance cautiously
-
-**Missing Data**: Check that:
-- Station IDs are correct
-- Date ranges overlap with available data
-- GEE project has necessary permissions
-
-### Debug Mode
-
-For debugging, you can inspect intermediate outputs in the workspace directory structure:
+## Workspace Structure
+`nitropulse` creates a workspace directory to store all configurations, inputs, and outputs. By default, this is located at `~/.nitropulse`.
 
 ```
-workspace/
-├── inputs/
-│   ├── RISMA_CSV_SSM_SST_AirT_2015_2023_new/
-│   └── S1_data/
-├── outputs/
+~/.nitropulse/
+├── config/                 # Configuration files for models (auto-generated)
+│   ├── gdd/
+│   └── inversion/
+├── inputs/                 # Raw data downloaded by the tool
+│   ├── RISMA_CSV_files/
+│   └── S1_CSV_files/
+├── models/                 # Trained machine learning models (*.joblib)
+└── outputs/                # Processed data and results
 │   ├── pheno_df.csv
 │   └── inv_df.csv
-└── models/
 ```
 
 ## Contributing
-
+Contributions are welcome! Please follow these steps:
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+2. Create a new feature branch (`git checkout -b feature/your-feature-name`)
+3. Make your changes and commit them (`git commit -m 'Add some feature'`)
+4. Push to the branch (`git push origin feature/your-feature-name`)
+5. Open a Pull Request
 
 ## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the Apache 2.0 License - see the LICENSE file for details.
 
 ## Citation
-
 If you use this package in your research, please cite:
 
 ```bibtex
 @software{nitropulse,
-  title={Nitropulse: A precision tool for mapping nitrous oxide (N₂O) emission pulses in agricultural landscapes},
-  author={Morteza Khazaei},
+  title={{nitropulse}: A precision tool for mapping nitrous oxide (N₂O) emission pulses in agricultural landscapes},
+  author={Khazaei, Morteza},
   year={2024},
-  url={https://github.com/Morteza-Khazaei/nitropulse}
+  url={https://github.com/Morteza-Khazaei/nitropulse},
+  version={0.1.0}
 }
 ```
-
-## Support
-
-For support and questions:
-- Create an issue on GitHub
-- Contact the development team
-- Check the documentation wiki
-
----
-
-**Note**: This package is designed for research purposes and requires appropriate permissions for accessing Google Earth Engine and RISMA data networks.

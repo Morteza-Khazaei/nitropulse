@@ -88,7 +88,7 @@ class S1Data:
         pbar_stations = tqdm(stations, desc="Exporting S1 data from GEE")
         for station_id in pbar_stations:
 
-            fname = f'S1_Backscatter_RISMA_{station_id}_{start_date.split("-")[0]}_to_{end_date.split("-")[0]}_buffer{buffer_distance}m'
+            fname = f'S1_Backscatter_{station_id}_{start_date.split("-")[0]}_to_{end_date.split("-")[0]}_buffer{buffer_distance}m'
             file_path = os.path.join(self.s1_dir, f'{fname}.csv')
 
             # Check if file exists
@@ -228,12 +228,13 @@ class S1Data:
         list_of_dfs = []
 
         # Loop through each file in the directory
-        file_list = sorted(os.listdir(self.s1_dir), key=lambda x:int(x.split('_')[3][2:]))
+        file_list = sorted(os.listdir(self.s1_dir), key=lambda x:int(x.split('_')[3][2:])) # Assumes station format like RISMA_MB1
         pbar = tqdm(file_list, desc="Loading S1 files")
         for filename in pbar:
             if filename.endswith(".csv"):  # Check if the file is a CSV file
                 # Extract the full station name (e.g., RISMA_MB1) from the filename
-                full_station_name = filename.split('_')[3]
+                parts = filename.split('_')
+                full_station_name = f"{parts[2]}_{parts[3]}"
                 # Use the short station name (e.g., MB1) to ensure consistency with RISMA data
                 short_station_name = full_station_name.split('_')[-1]
                 pbar.set_description(f"Loading {filename}")
