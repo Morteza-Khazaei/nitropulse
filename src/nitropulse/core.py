@@ -275,7 +275,11 @@ def main():
     parser_modeling.set_defaults(func=modeling_command)
 
     # --- Run command (full workflow) ---
-    parser_run = subparsers.add_parser('run', help='Runs the complete workflow from download to modeling.', parents=[parent_parser])
+    parser_run = subparsers.add_parser(
+        'run',
+        help='Runs the complete workflow from download to modeling.',
+        description='Runs the complete workflow from download to modeling.',
+        parents=[parent_parser])
     parser_run.add_argument('--stations', nargs='+', default=risma_stations, help=f"List of station IDs to process.\n(default: all stations)")
     parser_run.add_argument('--buffer-distance', type=int, default=15, help='Buffer distance for S1 data (meters).\n(default: 15)') 
     parser_run.add_argument('--start-date', default='2015-01-01', help='Start date for data retrieval (YYYY-MM-DD).\n(default: 2015-01-01)')

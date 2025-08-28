@@ -23,6 +23,9 @@ Requires-Dist: geemap
 Requires-Dist: RISMA
 Requires-Dist: tqdm
 Requires-Dist: joblib
+Provides-Extra: test
+Requires-Dist: pytest; extra == "test"
+Requires-Dist: pytest-mock; extra == "test"
 Dynamic: license-file
 
 # nitropulse

@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://github.com/Morteza-Khazaei/nitropulse">
     <!-- Add your logo here -->
-    <img src="https://via.placeholder.com/400x200.png?text=nitropulse" alt="nitropulse logo"/>
+    <img src="logo/nitropulse.png" alt="nitropulse logo"/>
   </a>
 </p>
 

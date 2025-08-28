@@ -7,3 +7,7 @@ geemap
 RISMA
 tqdm
 joblib
+
+[test]
+pytest
+pytest-mock
