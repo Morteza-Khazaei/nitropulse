@@ -3,7 +3,7 @@
 <p align="center">
   <a href="https://github.com/Morteza-Khazaei/nitropulse">
     <!-- Add your logo here -->
-    <img src="https://raw.githubusercontent.com/Morteza-Khazaei/nitropulse/main/logo/nitropulse.png" alt="nitropulse logo" width="400"/>
+    <img src="https://raw.githubusercontent.com/Morteza-Khazaei/nitropulse/main/logo/nitropulse.png" alt="nitropulse logo" width="400" />
   </a>
 </p>
 
@@ -14,7 +14,7 @@
 <p align="center">
     <a href="https://github.com/Morteza-Khazaei/nitropulse/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License"></a>
     <a href="#"><img src="https://img.shields.io/badge/python-3.8+-blue.svg" alt="Python version"></a>
-    <a href="https://github.com/Morteza-Khazaei/nitropulse/actions"><img src="https://github.com/Morteza-Khazaei/nitropulse/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+    <a href="https://github.com/Morteza-Khazaei/nitropulse/actions/workflows/ci.yml"><img src="https://github.com/Morteza-Khazaei/nitropulse/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
 </p>
 
 ---
@@ -36,9 +36,8 @@ The workflow consists of four main stages:
 - An active Google Earth Engine account.
 
 ### 1. Install Google Cloud SDK
-The `earthengine` command is part of the Google Cloud SDK. Before you can authenticate, you must install it by following the official Google Cloud SDK installation instructions.
-
-After installation, initialize the SDK by running `gcloud init`.
+The `earthengine` command is part of the Google Cloud SDK. Before you can authenticate, you must install it.
+Follow the official Google Cloud SDK installation instructions. After installation, initialize the SDK by running `gcloud init`.
 
 ### 2. Authenticate with Google Earth Engine
 Once the Google Cloud SDK is installed, authenticate your machine with GEE.

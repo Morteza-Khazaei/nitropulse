@@ -147,7 +147,7 @@ def setup_workspace(workspace_dir):
     print(f"Verifying workspace at: {workspace_dir}")
 
     # Create standard subdirectories for inputs, outputs, models, and configs
-    subdirs = ['inputs', 'outputs', 'models', 'config/gdd', 'config/inversion']
+    subdirs = ['inputs', 'outputs', 'models', 'config/gdd', 'config/inversion', 'config/risma']
     for subdir in subdirs:
         os.makedirs(os.path.join(workspace_dir, subdir), exist_ok=True)
 
@@ -159,6 +159,7 @@ def setup_workspace(workspace_dir):
         'config/gdd/crop_gdd_thresh.json',
         'config/gdd/crop_bbch_k_b_coff.json',
         'config/inversion/crop_inversion_bounds.json',
+        'config/risma/stations_texture.json',
     ]
 
     for template_path in config_templates:
@@ -233,7 +234,10 @@ def main():
     default_workspace = os.path.join(home_dir, '.nitropulse')
     risma_stations = ['RISMA_MB1', 'RISMA_MB2', 'RISMA_MB3', 'RISMA_MB4', 'RISMA_MB5',
                       'RISMA_MB6', 'RISMA_MB7', 'RISMA_MB8', 'RISMA_MB9', 'RISMA_MB10',
-                      'RISMA_MB11', 'RISMA_MB12', 'RISMA_MB13']
+                      'RISMA_MB11', 'RISMA_MB12', 'RISMA_MB13', 'RISMA_MB14', 'RISMA_MB15',
+                      'RISMA_MB16', 'RISMA_MB17', 'RISMA_MB18', 'RISMA_MB19', 'RISMA_MB20',
+                      'RISMA_MB21', 'RISMA_MB22', 'RISMA_MB23', 'RISMA_MB24', 'RISMA_MB25',
+                      'RISMA_MB26', 'RISMA_SK1', 'RISMA_SK2', 'RISMA_SK3', 'RISMA_SK4']
     default_models_str = '{"RT_s": "PRISM1", "RT_c": "Diff"}'
 
     # Parent parser for common arguments

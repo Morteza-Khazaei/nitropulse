@@ -1,0 +1,186 @@
+{
+  "MB1": [
+    {"depth_cm": 5, "density_gcm3": 1.28, "sand_pct": 78.8, "silt_pct": 10.1, "clay_pct": 11.1, "classification": "Sandy Loam"},
+    {"depth_cm": 20, "density_gcm3": 1.56, "sand_pct": 80.2, "silt_pct": 8.3, "clay_pct": 11.5, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 81.5, "silt_pct": 8.2, "clay_pct": 10.3, "classification": "Loamy Sand"},
+    {"depth_cm": 100, "density_gcm3": 1.57, "sand_pct": 81.0, "silt_pct": 6.8, "clay_pct": 12.2, "classification": "Sandy Loam"}
+  ],
+  "MB2": [
+    {"depth_cm": 5, "density_gcm3": 1.35, "sand_pct": 44.9, "silt_pct": 20.8, "clay_pct": 34.3, "classification": "Clay Loam"},
+    {"depth_cm": 20, "density_gcm3": 1.63, "sand_pct": 62.6, "silt_pct": 12.9, "clay_pct": 24.5, "classification": "Sandy Clay Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.63, "sand_pct": 65.8, "silt_pct": 13.2, "clay_pct": 21.0, "classification": "Sandy Clay Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.57, "sand_pct": 75.3, "silt_pct": 15.0, "clay_pct": 9.7, "classification": "Sandy Loam"}
+  ],
+  "MB3": [
+    {"depth_cm": 5, "density_gcm3": 1.47, "sand_pct": 47.1, "silt_pct": 21.1, "clay_pct": 31.8, "classification": "Sandy Clay Loam"},
+    {"depth_cm": 20, "density_gcm3": 1.52, "sand_pct": 45.8, "silt_pct": 21.3, "clay_pct": 32.9, "classification": "Sandy Clay Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.44, "sand_pct": 31.3, "silt_pct": 23.7, "clay_pct": 45.0, "classification": "Clay"},
+    {"depth_cm": 100, "density_gcm3": 1.41, "sand_pct": 69.9, "silt_pct": 17.7, "clay_pct": 12.4, "classification": "Sandy Loam"}
+  ],
+  "MB4": [
+    {"depth_cm": 5, "density_gcm3": 1.33, "sand_pct": 90.4, "silt_pct": 0.2, "clay_pct": 9.4, "classification": "Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.50, "sand_pct": 88.7, "silt_pct": 1.6, "clay_pct": 9.7, "classification": "Loamy Sand"},
+    {"depth_cm": 50, "density_gcm3": 1.60, "sand_pct": 88.7, "silt_pct": 1.6, "clay_pct": 9.7, "classification": "Loamy Sand"},
+    {"depth_cm": 100, "density_gcm3": 1.58, "sand_pct": 85.6, "silt_pct": 5.0, "clay_pct": 9.4, "classification": "Loamy Sand"}
+  ],
+  "MB5": [
+    {"depth_cm": 5, "density_gcm3": 1.46, "sand_pct": 41.4, "silt_pct": 18.1, "clay_pct": 40.5, "classification": "Clay"},
+    {"depth_cm": 20, "density_gcm3": 1.41, "sand_pct": 22.7, "silt_pct": 19.5, "clay_pct": 57.8, "classification": "Clay"},
+    {"depth_cm": 50, "density_gcm3": 1.33, "sand_pct": 4.3, "silt_pct": 27.2, "clay_pct": 68.5, "classification": "Heavy Clay"},
+    {"depth_cm": 100, "density_gcm3": 1.32, "sand_pct": 3.0, "silt_pct": 27.7, "clay_pct": 69.3, "classification": "Heavy Clay"}
+  ],
+  "MB6": [
+    {"depth_cm": 5, "density_gcm3": 1.21, "sand_pct": 3.7, "silt_pct": 24.6, "clay_pct": 71.7, "classification": "Heavy Clay"},
+    {"depth_cm": 20, "density_gcm3": 1.39, "sand_pct": 3.8, "silt_pct": 21.3, "clay_pct": 74.9, "classification": "Heavy Clay"},
+    {"depth_cm": 50, "density_gcm3": 1.31, "sand_pct": 2.0, "silt_pct": 25.9, "clay_pct": 72.1, "classification": "Heavy Clay"},
+    {"depth_cm": 100, "density_gcm3": 1.31, "sand_pct": 0.5, "silt_pct": 27.3, "clay_pct": 72.2, "classification": "Heavy Clay"}
+  ],
+  "MB7": [
+    {"depth_cm": 5, "density_gcm3": 1.40, "sand_pct": 78.3, "silt_pct": 9.2, "clay_pct": 12.5, "classification": "Sandy Loam"},
+    {"depth_cm": 20, "density_gcm3": 1.59, "sand_pct": 82.3, "silt_pct": 5.8, "clay_pct": 11.9, "classification": "Loamy Sand"},
+    {"depth_cm": 50, "density_gcm3": 1.57, "sand_pct": 78.1, "silt_pct": 8.6, "clay_pct": 13.3, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.58, "sand_pct": 80.3, "silt_pct": 8.0, "clay_pct": 11.7, "classification": "Sandy Loam"}
+  ],
+  "MB8": [
+    {"depth_cm": 5, "density_gcm3": 1.22, "sand_pct": 3.6, "silt_pct": 33.2, "clay_pct": 63.2, "classification": "Heavy Clay"},
+    {"depth_cm": 20, "density_gcm3": 1.38, "sand_pct": 3.5, "silt_pct": 22.6, "clay_pct": 73.9, "classification": "Heavy Clay"},
+    {"depth_cm": 50, "density_gcm3": 1.38, "sand_pct": 3.9, "silt_pct": 23.3, "clay_pct": 72.8, "classification": "Heavy Clay"},
+    {"depth_cm": 100, "density_gcm3": 1.50, "sand_pct": 1.5, "silt_pct": 27.6, "clay_pct": 70.9, "classification": "Heavy Clay"}
+  ],
+  "MB9": [
+    {"depth_cm": 5, "density_gcm3": 1.53, "sand_pct": 81.3, "silt_pct": 6.0, "clay_pct": 12.7, "classification": "Sandy Loam"},
+    {"depth_cm": 20, "density_gcm3": 1.60, "sand_pct": 85.5, "silt_pct": 3.2, "clay_pct": 11.3, "classification": "Loamy Sand"},
+    {"depth_cm": 50, "density_gcm3": 1.53, "sand_pct": 83.4, "silt_pct": 5.1, "clay_pct": 11.5, "classification": "Loamy Sand"},
+    {"depth_cm": 100, "density_gcm3": 1.58, "sand_pct": 87.5, "silt_pct": 6.7, "clay_pct": 5.8, "classification": "Loamy Sand"}
+  ],
+  "MB10": [
+    {"depth_cm": 5, "density_gcm3": 1.05, "sand_pct": 4.55, "silt_pct": 24.0, "clay_pct": 71.6, "classification": "Heavy Clay"},
+    {"depth_cm": 20, "density_gcm3": 1.27, "sand_pct": 2.4, "silt_pct": 13.5, "clay_pct": 84.1, "classification": "Heavy Clay"},
+    {"depth_cm": 50, "density_gcm3": 1.24, "sand_pct": 6.7, "silt_pct": 22.9, "clay_pct": 70.4, "classification": "Heavy Clay"},
+    {"depth_cm": 100, "density_gcm3": 1.30, "sand_pct": 13.6, "silt_pct": 44.6, "clay_pct": 41.8, "classification": "Silty Clay"}
+  ],
+  "MB11": [
+    {"depth_cm": 5, "density_gcm3": 1.3, "sand_pct": 23.8, "silt_pct": 39.5, "clay_pct": 36.8, "classification": "Clay Loam"},
+    {"depth_cm": 20, "density_gcm3": 1.59, "sand_pct": 25.4, "silt_pct": 38.8, "clay_pct": 35.8, "classification": "Clay Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.64, "sand_pct": 24.0, "silt_pct": 46.6, "clay_pct": 29.3, "classification": "Clay Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.74, "sand_pct": 64.9, "silt_pct": 29.4, "clay_pct": 5.8, "classification": "Sandy Loam"}
+  ],
+  "MB12": [
+    {"depth_cm": 5, "density_gcm3": 1.33, "sand_pct": 42.1, "silt_pct": 41.7, "clay_pct": 16.2, "classification": "Loam"},
+    {"depth_cm": 20, "density_gcm3": 1.57, "sand_pct": 36.5, "silt_pct": 38.7, "clay_pct": 24.8, "classification": "Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.65, "sand_pct": 27.9, "silt_pct": 45.0, "clay_pct": 27.1, "classification": "Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.55, "sand_pct": 24.9, "silt_pct": 46.2, "clay_pct": 28.9, "classification": "Clay Loam"}
+  ],
+  "MB13": [
+    {"depth_cm": 5, "density_gcm3": 1.3, "sand_pct": 81.0, "silt_pct": 12.0, "clay_pct": 7.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.6, "sand_pct": 81.0, "silt_pct": 11.0, "clay_pct": 8.0, "classification": "Loamy Sand"},
+    {"depth_cm": 50, "density_gcm3": 1.52, "sand_pct": 73.0, "silt_pct": 15.0, "clay_pct": 12.0, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.32, "sand_pct": 19.0, "silt_pct": 39.0, "clay_pct": 42.0, "classification": "Clay"}
+  ],
+  "MB14": [
+    {"depth_cm": 5, "density_gcm3": 1.4, "sand_pct": 89.0, "silt_pct": 7.0, "clay_pct": 4.0, "classification": "Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.4, "sand_pct": 73.0, "silt_pct": 17.0, "clay_pct": 10.0, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.4, "sand_pct": 49.0, "silt_pct": 31.0, "clay_pct": 20.0, "classification": "Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.4, "sand_pct": 23.0, "silt_pct": 43.0, "clay_pct": 34.0, "classification": "Clay Loam"}
+  ],
+  "MB15": [
+    {"depth_cm": 5, "density_gcm3": 1.52, "sand_pct": 83.0, "silt_pct": 11.0, "clay_pct": 6.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.5, "sand_pct": 75.0, "silt_pct": 15.0, "clay_pct": 10.0, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 89.0, "silt_pct": 9.0, "clay_pct": 8.0, "classification": "Loamy Sand"},
+    {"depth_cm": 100, "density_gcm3": 1.42, "sand_pct": 97.0, "silt_pct": 3.0, "clay_pct": 0.0, "classification": "Sand"}
+  ],
+  "MB16": [
+    {"depth_cm": 5, "density_gcm3": 1.4, "sand_pct": 82.0, "silt_pct": 11.0, "clay_pct": 7.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.5, "sand_pct": 80.0, "silt_pct": 12.0, "clay_pct": 8.0, "classification": "Loamy Sand"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 78.0, "silt_pct": 14.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.4, "sand_pct": 76.0, "silt_pct": 16.0, "clay_pct": 8.0, "classification": "Sandy Loam"}
+  ],
+  "MB17": [
+    {"depth_cm": 5, "density_gcm3": 1.4, "sand_pct": 81.0, "silt_pct": 12.0, "clay_pct": 7.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.5, "sand_pct": 79.0, "silt_pct": 13.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 77.0, "silt_pct": 15.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.4, "sand_pct": 75.0, "silt_pct": 17.0, "clay_pct": 8.0, "classification": "Sandy Loam"}
+  ],
+  "MB18": [
+    {"depth_cm": 5, "density_gcm3": 1.4, "sand_pct": 81.0, "silt_pct": 12.0, "clay_pct": 7.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.5, "sand_pct": 79.0, "silt_pct": 13.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 77.0, "silt_pct": 15.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.4, "sand_pct": 75.0, "silt_pct": 17.0, "clay_pct": 8.0, "classification": "Sandy Loam"}
+  ],
+  "MB19": [
+    {"depth_cm": 5, "density_gcm3": 1.4, "sand_pct": 81.0, "silt_pct": 12.0, "clay_pct": 7.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.5, "sand_pct": 79.0, "silt_pct": 13.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 77.0, "silt_pct": 15.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.4, "sand_pct": 75.0, "silt_pct": 17.0, "clay_pct": 8.0, "classification": "Sandy Loam"}
+  ],
+  "MB20": [
+    {"depth_cm": 5, "density_gcm3": 1.4, "sand_pct": 81.0, "silt_pct": 12.0, "clay_pct": 7.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.5, "sand_pct": 79.0, "silt_pct": 13.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 77.0, "silt_pct": 15.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.4, "sand_pct": 75.0, "silt_pct": 17.0, "clay_pct": 8.0, "classification": "Sandy Loam"}
+  ],
+  "MB21": [
+    {"depth_cm": 5, "density_gcm3": 1.4, "sand_pct": 81.0, "silt_pct": 12.0, "clay_pct": 7.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.5, "sand_pct": 79.0, "silt_pct": 13.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 77.0, "silt_pct": 15.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.4, "sand_pct": 75.0, "silt_pct": 17.0, "clay_pct": 8.0, "classification": "Sandy Loam"}
+  ],
+  "MB22": [
+    {"depth_cm": 5, "density_gcm3": 1.4, "sand_pct": 81.0, "silt_pct": 12.0, "clay_pct": 7.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.5, "sand_pct": 79.0, "silt_pct": 13.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 77.0, "silt_pct": 15.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.4, "sand_pct": 75.0, "silt_pct": 17.0, "clay_pct": 8.0, "classification": "Sandy Loam"}
+  ],
+  "MB23": [
+    {"depth_cm": 5, "density_gcm3": 1.4, "sand_pct": 81.0, "silt_pct": 12.0, "clay_pct": 7.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.5, "sand_pct": 79.0, "silt_pct": 13.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 77.0, "silt_pct": 15.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.4, "sand_pct": 75.0, "silt_pct": 17.0, "clay_pct": 8.0, "classification": "Sandy Loam"}
+  ],
+  "MB24": [
+    {"depth_cm": 5, "density_gcm3": 1.4, "sand_pct": 81.0, "silt_pct": 12.0, "clay_pct": 7.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.5, "sand_pct": 79.0, "silt_pct": 13.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 77.0, "silt_pct": 15.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.4, "sand_pct": 75.0, "silt_pct": 17.0, "clay_pct": 8.0, "classification": "Sandy Loam"}
+  ],
+  "MB25": [
+    {"depth_cm": 5, "density_gcm3": 1.4, "sand_pct": 81.0, "silt_pct": 12.0, "clay_pct": 7.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.5, "sand_pct": 79.0, "silt_pct": 13.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 77.0, "silt_pct": 15.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.4, "sand_pct": 75.0, "silt_pct": 17.0, "clay_pct": 8.0, "classification": "Sandy Loam"}
+  ],
+  "MB26": [
+    {"depth_cm": 5, "density_gcm3": 1.4, "sand_pct": 81.0, "silt_pct": 12.0, "clay_pct": 7.0, "classification": "Loamy Sand"},
+    {"depth_cm": 20, "density_gcm3": 1.5, "sand_pct": 79.0, "silt_pct": 13.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.5, "sand_pct": 77.0, "silt_pct": 15.0, "clay_pct": 8.0, "classification": "Sandy Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.4, "sand_pct": 75.0, "silt_pct": 17.0, "clay_pct": 8.0, "classification": "Sandy Loam"}
+  ],
+  "SK1": [
+    {"depth_cm": 5, "density_gcm3": 1.07, "sand_pct": 14.8, "silt_pct": 56.3, "clay_pct": 28.9, "classification": "Silty Clay Loam"},
+    {"depth_cm": 20, "density_gcm3": 1.52, "sand_pct": 23.0, "silt_pct": 49.9, "clay_pct": 27.1, "classification": "Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.59, "sand_pct": 11.7, "silt_pct": 53.2, "clay_pct": 35.1, "classification": "Silty Clay Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.81, "sand_pct": 38.8, "silt_pct": 31.5, "clay_pct": 29.7, "classification": "Clay Loam"},
+    {"depth_cm": 150, "density_gcm3": 1.81, "sand_pct": 24.0, "silt_pct": 47.3, "clay_pct": 28.7, "classification": "Clay Loam"}
+  ],
+  "SK2": [
+    {"depth_cm": 5, "density_gcm3": 1.34, "sand_pct": 24.3, "silt_pct": 49.6, "clay_pct": 26.1, "classification": "Loam"},
+    {"depth_cm": 20, "density_gcm3": 1.58, "sand_pct": 21.5, "silt_pct": 48.6, "clay_pct": 29.9, "classification": "Clay Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.69, "sand_pct": 52.5, "silt_pct": 26.8, "clay_pct": 20.7, "classification": "Sandy Clay Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.87, "sand_pct": 35.1, "silt_pct": 25.8, "clay_pct": 39.1, "classification": "Clay Loam"},
+    {"depth_cm": 150, "density_gcm3": 1.88, "sand_pct": 36.2, "silt_pct": 31.0, "clay_pct": 32.8, "classification": "Clay Loam"}
+  ],
+  "SK3": [
+    {"depth_cm": 5, "density_gcm3": 1.61, "sand_pct": 45.1, "silt_pct": 30.7, "clay_pct": 24.2, "classification": "Loam"},
+    {"depth_cm": 20, "density_gcm3": 1.63, "sand_pct": 49.5, "silt_pct": 26.1, "clay_pct": 24.4, "classification": "Sandy Clay Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.73, "sand_pct": 41.4, "silt_pct": 25.2, "clay_pct": 33.4, "classification": "Clay Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.86, "sand_pct": 40.9, "silt_pct": 31.9, "clay_pct": 27.2, "classification": "Loam"},
+    {"depth_cm": 150, "density_gcm3": 2.0, "sand_pct": 37.1, "silt_pct": 29.4, "clay_pct": 33.5, "classification": "Clay Loam"}
+  ],
+  "SK4": [
+    {"depth_cm": 5, "density_gcm3": 1.57, "sand_pct": 29.1, "silt_pct": 37.6, "clay_pct": 33.3, "classification": "Clay Loam"},
+    {"depth_cm": 20, "density_gcm3": 1.52, "sand_pct": 26.5, "silt_pct": 40.7, "clay_pct": 32.8, "classification": "Clay Loam"},
+    {"depth_cm": 50, "density_gcm3": 1.59, "sand_pct": 28.7, "silt_pct": 38.0, "clay_pct": 33.3, "classification": "Clay Loam"},
+    {"depth_cm": 100, "density_gcm3": 1.57, "sand_pct": 30.4, "silt_pct": 36.6, "clay_pct": 33.0, "classification": "Clay Loam"},
+    {"depth_cm": 150, "density_gcm3": 1.62, "sand_pct": 33.5, "silt_pct": 34.6, "clay_pct": 31.9, "classification": "Clay Loam"}
+  ]
+}

@@ -63,7 +63,9 @@ class S1Data:
         
          # Default stations if none provided
         if stations is None:
-            stations = ['MB1', 'MB2', 'MB3', 'MB4', 'MB5', 'MB6', 'MB7', 'MB8', 'MB9', 'MB10', 'MB11', 'MB12', 'MB13', 'MB14', 'MB15',]  # Default station if none provided
+            stations = ['MB1', 'MB2', 'MB3', 'MB4', 'MB5', 'MB6', 'MB7', 'MB8', 'MB9', 'MB10', 
+                        'MB11', 'MB12', 'MB13', 'MB14', 'MB15', 'MB16', 'MB17', 'MB18', 'MB19', 'MB20', 
+                        'MB21', 'MB22', 'MB23', 'MB24', 'MB25', 'MB26', 'SK1', 'SK2', 'SK3', 'SK4',]  # Default station if none provided
         
         # Initialize Earth Engine
         try:
@@ -104,7 +106,7 @@ class S1Data:
                 short_station_id = station_id.split('_')[-1]
 
                 # Define the region of interest (ROI) using the station ID and buffer distance
-                geom_buffer = roi.filter(ee.Filter.eq('Station ID', short_station_id)).geometry().buffer(buffer_distance)
+                geom_buffer = roi.filter(ee.Filter.eq('stationID', short_station_id)).geometry().buffer(buffer_distance)
 
                 # Combined function to add date and crop type efficiently
                 def enhance_image(image):
@@ -270,34 +272,32 @@ class S1Data:
         df_t.index.rename('date', inplace=True)
         df_t.reset_index(inplace=True)
 
-        # Add new column named 'band' by using of _** from20200902T001505_VH
+        # Add new column named 'band' by using part after first underscore, e.g., from20200902T001505_VH -> 'VH'
         df_t['band'] = df_t['date'].apply(lambda x: x.split('_')[1])
 
+        # Orbit pass (asc/desc)
         df_t['op'] = df_t['date'].apply(lambda x: x.split('_')[2])
-
-        # if orbitpass == 'asc' : 0 else: 1
         df_t['op'] = df_t['op'].apply(lambda x: 0 if x == 'asc' else 1)
 
-        # convert date to datetime by removing _** from20200902T001505_VH
-        df_t['date'] = pd.to_datetime(df_t['date'].apply(lambda x: x.split('_')[0][:8]))
+        # Parse full UTC acquisition time from 'fromYYYYMMDDThhmmss'
+        def parse_ts(s):
+            ts = s.split('_')[0]
+            ts = ts.replace('from', '')
+            return ts
+        df_t['date'] = pd.to_datetime(df_t['date'].apply(parse_ts), format='%Y%m%dT%H%M%S', errors='coerce')
 
-        # add year
+        # add year and doy for downstream GDD grouping
         df_t['year'] = df_t['date'].dt.year
-
-        # add day of year as doy
         df_t['doy'] = df_t['date'].dt.dayofyear
-
-        # drop date
-        df_t.drop('date', axis=1, inplace=True)
 
         # Delete all rows with column 'band' has value doy to year
         indices = df_t[(df_t['band'] == 'doy') | (df_t['band'] == 'year')].index
         df_t.drop(indices, inplace=True)
 
         gp_df = df_t.pivot_table(
-            index=['op', 'year', 'doy'],
+            index=['date', 'op', 'year', 'doy'],
             columns='band',
-            values=df_t.columns.difference(['op', 'year', 'doy', 'band'])[0]  # usually the value column
+            values=df_t.columns.difference(['date', 'op', 'year', 'doy', 'band'])[0]  # usually the value column
         ).reset_index()
         
         gp_df['Station'] = station
