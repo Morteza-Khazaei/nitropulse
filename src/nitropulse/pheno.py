@@ -75,24 +75,35 @@ class BBCH:
         #  Use interploate to fill Nan in SST
         merged_df['SST'] = merged_df['SST'].interpolate()
 
-        # Calculate cumulative GDD based solely on soil temperature (preferred)
-        merged_df['cum_GDD'] = (
+        # Calculate cumulative GDD for air and soil using vectorized groupby
+        merged_df['cum_GDD_air'] = (
+            (merged_df['mean_airt'] - merged_df['BASE_TEMP'])
+            .clip(lower=0)
+            .groupby(merged_df['year'])
+            .cumsum()
+        )
+
+        merged_df['cum_GDD_soil'] = (
             (merged_df['mean_sst'] - merged_df['BASE_TEMP'])
             .clip(lower=0)
             .groupby(merged_df['year'])
             .cumsum()
         )
-        # Clean up any legacy columns if present
-        for col in ['cum_GDD_air', 'cum_GDD_soil']:
-            if col in merged_df.columns:
-                merged_df.drop(columns=[col], inplace=True)
+        
+        # add cum_GDD based on mean of GDD
+        merged_df['cum_GDD'] = merged_df[['cum_GDD_air', 'cum_GDD_soil']].mean(axis=1)
+        # For non-ag landcover classes (e.g., 30, 34), do not compute phenology metrics
+        non_ag = merged_df['lc'].isin(['30', '34'])
+        merged_df.loc[non_ag, ['cum_GDD_air', 'cum_GDD_soil', 'cum_GDD']] = pd.NA
 
         tqdm.pandas(desc="Calculating BBCH")
         # Calculate BBCH stage based on cumulative GDD and soil temperature
         merged_df['BBCH'] = merged_df.progress_apply(lambda row: self.get_bbch_from_soil_gdd(row['lc'], row['cum_GDD'], row['SST']), axis=1)
+        merged_df.loc[non_ag, 'BBCH'] = pd.NA
 
         # Calculate the cumulative sum of SSM for each year
         merged_df['cum_SSM'] = merged_df.groupby('year')['SSM'].cumsum()
+        merged_df.loc[non_ag, 'cum_SSM'] = pd.NA
 
         return merged_df
     
@@ -102,6 +113,9 @@ class BBCH:
         Map cumulative soil GDD to a BBCH stage via piecewise linear interpolation
         between defined thresholds.
         """
+        if pd.isna(cum_gdd) or pd.isna(sst):
+            return None
+
         # crop = crop.lower()
         if crop not in self.crop_gdd_thresholds:
             # Unknown landcover class: skip BBCH computation

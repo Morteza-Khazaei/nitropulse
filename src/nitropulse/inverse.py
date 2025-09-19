@@ -39,11 +39,13 @@ class Inverse:
 
 
     def run(self, pheno_df):
-        # Implementation of the run method will go here
-        pheno_df = pheno_df.groupby(['op', 'year', 'doy', 'angle'], group_keys=False).apply(lambda x: self.inversion(x, self.crop_inversion_bounds))
+        # Apply inversion groupwise
+        pheno_df = pheno_df.groupby(['op', 'year', 'doy', 'angle'], group_keys=False).apply(
+            lambda x: self.inversion(x, self.crop_inversion_bounds)
+        )
 
-        # drop na
-        pheno_df.dropna(inplace=True)
+        # Keep rows where we produced a soil backscatter estimate (vvs)
+        pheno_df = pheno_df[pheno_df['vvs'].notna()]
 
         # drop rows with vvs lower than -50
         pheno_df = pheno_df[pheno_df.vvs > -50]
@@ -171,16 +173,30 @@ class Inverse:
                 l_bound = bounds[croptype]['lbound']
                 w_bound = bounds[croptype]['wbound']
 
-                # Example usage
-                height = self.estimate_crop_height_interp(croptype, bbch, rvi)
+                # Non-agriculture classes: bypass inversion and set VVS = VV
+                if croptype in ('30', '34'):
+                    d = c = s = l = w = np.nan
+                    vv_soil = vv  # power
+                    vv_veg = 0.0
+                    height = (np.nan, np.nan, np.nan, np.nan, np.nan)
+                else:
+                    # Estimate plant height
+                    height = self.estimate_crop_height_interp(croptype, bbch, rvi)
 
-                # Initial guess for mv and ks
-                initial_guess = [height[1], c_bound[1], s_bound[1], l_bound[1], w_bound[1]]
+                    # Initial guess for mv and ks
+                    initial_guess = [height[1], c_bound[1], s_bound[1], l_bound[1], w_bound[1]]
 
-                # Perform the optimization
-                res = least_squares(self.residuals_local, initial_guess, args=(self.fGHz, self.acftype, self.models, ssm, vv, theta_i, rvi, sand, clay, bulk, sst),
-                    bounds=([height[0], c_bound[0], s_bound[0], l_bound[0], w_bound[0]], [height[2], c_bound[2], s_bound[2], l_bound[2], w_bound[2]]))
-                d, c, s, l, w = res.x
+                    # Perform the optimization
+                    res = least_squares(
+                        self.residuals_local,
+                        initial_guess,
+                        args=(self.fGHz, self.acftype, self.models, ssm, vv, theta_i, rvi, sand, clay, bulk, sst),
+                        bounds=(
+                            [height[0], c_bound[0], s_bound[0], l_bound[0], w_bound[0]],
+                            [height[2], c_bound[2], s_bound[2], l_bound[2], w_bound[2]],
+                        ),
+                    )
+                    d, c, s, l, w = res.x
 
                 db85 = Dobson85(clay=clay, sand=sand, bulk=bulk, mv=ssm, freq=self.fGHz, t=sst)
                 eps = np.array([db85.eps,], dtype=complex)
@@ -210,7 +226,8 @@ class Inverse:
 
                     vv_soil = sig_0_top['vv'][0]
 
-                vv_veg = vv - vv_soil
+                if croptype not in ('30', '34'):
+                    vv_veg = vv - vv_soil
 
 
             except Exception:

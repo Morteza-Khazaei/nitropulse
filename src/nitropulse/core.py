@@ -147,37 +147,31 @@ def setup_workspace(workspace_dir):
     print(f"Verifying workspace at: {workspace_dir}")
 
     # Create standard subdirectories for inputs, outputs, models, and configs
-    subdirs = ['inputs', 'outputs', 'models', 'config/gdd', 'config/inversion', 'config/risma']
+    subdirs = ['inputs', 'outputs', 'models', 'config', 'config/gdd', 'config/inversion', 'config/risma']
     for subdir in subdirs:
         os.makedirs(os.path.join(workspace_dir, subdir), exist_ok=True)
 
-    # List of config files to copy from the package to the workspace
-    # These files are essential for the application to run and are expected
-    # to be included in the package data upon installation.
-    config_templates = [
-        'config/gdd/crop_base_temp.json',
-        'config/gdd/crop_gdd_thresh.json',
-        'config/gdd/crop_bbch_k_b_coff.json',
-        'config/inversion/crop_inversion_bounds.json',
-        'config/risma/stations_texture.json',
-    ]
-
-    for template_path in config_templates:
-        dest_path = os.path.join(workspace_dir, template_path)
-        # If a config file doesn't exist in the workspace, copy it from the package
-        if not os.path.exists(dest_path):
-            try:
-                # Use pkg_resources to find the file within the installed package
-                source_path = pkg_resources.resource_filename('nitropulse', template_path)
-                print(f"Initializing config file: {os.path.basename(dest_path)}")
-                shutil.copy(source_path, dest_path) # This can raise FileNotFoundError
-            except (ModuleNotFoundError, KeyError, FileNotFoundError):
-                print(f"❌ Error: Packaged config file '{template_path}' not found.")
-                print("   This is a critical error. It can be caused by two things:")
-                print("     1. An incomplete installation of the 'nitropulse' package.")
-                print("     2. (For developers) The 'config' directory is not located inside 'src/nitropulse/'.")
-                print("   Please verify your project structure and installation.")
-                sys.exit(1)
+    # Copy all JSON config files from the installed package into the workspace
+    # This mirrors the package's config tree (gdd, inversion, risma)
+    config_dirs = ['config/gdd', 'config/inversion', 'config/risma']
+    for rel_dir in config_dirs:
+        dest_dir = os.path.join(workspace_dir, rel_dir)
+        try:
+            src_dir = pkg_resources.resource_filename('nitropulse', rel_dir)
+            if not os.path.isdir(src_dir):
+                raise FileNotFoundError(src_dir)
+            for fname in os.listdir(src_dir):
+                if not fname.lower().endswith('.json'):
+                    continue
+                src_file = os.path.join(src_dir, fname)
+                dest_file = os.path.join(dest_dir, fname)
+                if not os.path.exists(dest_file):
+                    print(f"Initializing config file: {os.path.join(rel_dir, fname)}")
+                    shutil.copy(src_file, dest_file)
+        except (ModuleNotFoundError, KeyError, FileNotFoundError) as e:
+            print(f"❌ Error: Could not initialize config directory '{rel_dir}': {e}")
+            print("   Ensure the package includes these files (pyproject package-data) and reinstall if needed.")
+            sys.exit(1)
     
     print("✅ Workspace verification complete.")
 
