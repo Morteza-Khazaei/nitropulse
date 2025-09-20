@@ -11,6 +11,7 @@ import geemap
 import numpy as np
 from geemap import ml
 from tqdm.auto import tqdm
+import pandas as pd
 
 
 class RegressionRF:
@@ -32,12 +33,21 @@ class RegressionRF:
         """
         self.workspace_dir = workspace_dir
         self.df = df.copy()
-        self.df.columns = self.df.columns.map(lambda c: c.lower() if isinstance(c, str) else c)
+        self.df.columns = [self._normalize_column_name(c) for c in self.df.columns]
+        # Drop duplicate columns that can arise from merges to keep single copies
+        self.df = self.df.loc[:, ~pd.Index(self.df.columns).duplicated()]
         self._trained_feature_map = {}
+        self._holdout_by_year = False
+        self._test_year_map = None
     
 
-    def run(self, vars, n_estimators=15, random_state=42, max_depth=15):
+    def run(self, vars, n_estimators=15, random_state=42, max_depth=15, holdout_by_year=True):
         trained_models = {}
+        self._holdout_by_year = holdout_by_year
+        if holdout_by_year:
+            self._init_holdout_years(random_state)
+        else:
+            self._test_year_map = None
         for var in tqdm(vars, desc="Training ensemble models"):
             model = RandomForestRegressor(n_estimators=n_estimators, random_state=random_state, max_depth=max_depth)
             trained_models[var] = self.__train(model, var)
@@ -84,7 +94,25 @@ class RegressionRF:
 
         X = self.df[features]
         y = self.df[var_lower]
-        
+
+        if self._holdout_by_year:
+            if self._test_year_map is None:
+                raise RuntimeError("Holdout years not initialised; call run() with holdout_by_year=True before training.")
+
+            if 'station' not in self.df.columns or 'year' not in self.df.columns:
+                raise KeyError("Columns 'station' and 'year' are required for year-based holdout splits.")
+
+            test_years = self.df['station'].map(self._test_year_map)
+            test_mask = test_years.eq(self.df['year']).fillna(False)
+
+            X_train, X_test = X[~test_mask], X[test_mask]
+            y_train, y_test = y[~test_mask], y[test_mask]
+
+            if X_train.empty or X_test.empty:
+                raise ValueError("Year-based holdout produced an empty train/test split. Check station/year coverage.")
+
+            return X_train, X_test, y_train, y_test
+
         return train_test_split(X, y, test_size=test_size, random_state=random_state)
     
     def __train(self, model, var):
@@ -98,10 +126,11 @@ class RegressionRF:
         y_train : array-like of shape (n_samples,) or (n_samples, n_outputs)
             The target values (real numbers).
         """
-        X_train, X_test, y_train, y_test = self.__split_data(var)
+        split = self.__split_data(var)
+        X_train, X_test, y_train, y_test = split
         reg_rf = model.fit(X_train, y_train)
 
-        # Make predictions
+        # Make predictions on the holdout set
         y_pred = model.predict(X_test)
 
         # Evaluate the model
@@ -110,7 +139,7 @@ class RegressionRF:
         mse = mean_squared_error(y_test, y_pred)
         rmse = np.sqrt(mse)
         bias= np.mean(y_test - y_pred)
-        ubrmse = np.sqrt(rmse**2 - bias**2)
+        ubrmse = np.sqrt(max(rmse**2 - bias**2, 0))
 
         # Using tqdm.write to not interfere with progress bars
         tqdm.write(f"Metrics for {var}:")
@@ -122,10 +151,59 @@ class RegressionRF:
         tqdm.write(f'\tBias: {bias:.4f}')
         tqdm.write("")
 
-        return reg_rf
-    
+        payload = {
+            'model': reg_rf,
+            'metrics': {
+                'r2': r2,
+                'mae': mae,
+                'mse': mse,
+                'rmse': rmse,
+                'ubrmse': ubrmse,
+                'bias': bias,
+            }
+        }
+
+        if self._holdout_by_year:
+            target_name = str(var).lower()
+            base_test = self.df.loc[X_test.index].copy()
+            base_test[f'{target_name}_pred'] = y_pred
+            payload['test_df'] = base_test.reset_index(drop=True)
+
+        return payload
+
     def __clean_tree(self, tree):
         return re.sub(r'\s+', ' ', tree)  # Replace multiple spaces with a single space
+
+    def _init_holdout_years(self, random_state):
+        if 'station' not in self.df.columns or 'year' not in self.df.columns:
+            raise KeyError("Columns 'station' and 'year' are required for year-based holdout splits.")
+
+        rng = np.random.default_rng(random_state)
+        self._test_year_map = {}
+
+        selections = []
+        for station, group in self.df.groupby('station'):
+            years = group['year'].dropna().unique()
+            if len(years) == 0:
+                continue
+            chosen = rng.choice(years)
+            self._test_year_map[station] = chosen
+            selections.append(f"{station}:{chosen}")
+
+        if not self._test_year_map:
+            raise ValueError("No station/year combinations available to create holdout set.")
+
+        summary = ', '.join(sorted(selections))
+        tqdm.write(f"Holdout years (per station): {summary}")
+
+    @staticmethod
+    def _normalize_column_name(col):
+        if isinstance(col, tuple):
+            parts = [str(p) for p in col if p is not None and str(p) != '']
+            col = '_'.join(parts)
+        if col is None:
+            return ''
+        return str(col).lower()
 
     def __asset_exists(self, asset_id):
         try:
