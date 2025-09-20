@@ -154,17 +154,17 @@ class Inverse:
         for idx, row in df_x.iterrows():
 
             try:
-                vv = self.to_power(row['VV'])
-                vh = self.to_power(row['VH'])
+                vv = self.to_power(row['vv'])
+                vh = self.to_power(row['vh'])
                 rvi = (4 * vh) / (vh + vv)
                 theta_i = row['angle']
-                ssm = row['SSM']
-                sst = row['SST']
-                bbch = row['BBCH']
+                ssm = row['ssm']
+                sst = row['sst']
+                bbch = row['bbch']
                 croptype = str(int(row['lc']))
-                sand = row['Sand']
-                silt = row['Silt']
-                clay = row['Clay']
+                sand = row['sand']
+                silt = row['silt']
+                clay = row['clay']
                 bulk = row['bulk']
                 doy = row['doy']
                 op = row['op']
@@ -173,7 +173,7 @@ class Inverse:
                 l_bound = bounds[croptype]['lbound']
                 w_bound = bounds[croptype]['wbound']
 
-                # Non-agriculture classes: bypass inversion and set VVS = VV
+                # Non-agriculture classes: bypass inversion and set vvs = vv
                 if croptype in ('30', '34'):
                     d = c = s = l = w = np.nan
                     vv_soil = vv  # power

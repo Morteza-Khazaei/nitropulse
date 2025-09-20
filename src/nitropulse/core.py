@@ -132,9 +132,16 @@ def run_modeling(args):
         print(f"   -> Saved {model_filename}")
     print("✅ Models saved successfully!")
 
+    rt_models = None
+    if getattr(args, 'models', None):
+        try:
+            rt_models = json.loads(args.models)
+        except Exception as exc:
+            print(f"⚠️  Could not parse models JSON for naming: {exc}. Using default tag.")
+
     if args.gee_project_id:
         print('🔄 Uploading ensemble models to GEE...')
-        ensrf.upload_rf_to_gee(rf_models, args.gee_project_id, save_dectree=False)
+        ensrf.upload_rf_to_gee(rf_models, args.gee_project_id, rt_models=rt_models, save_dectree=False)
         print('✅ Ensemble models uploaded to GEE!')
     else:
         print('⚠️  No GEE project ID provided, skipping upload to GEE.')
@@ -269,6 +276,7 @@ def main():
     # --- Modeling command ---
     parser_modeling = subparsers.add_parser('modeling', help='Trains ensemble models and optionally deploys them to GEE.', parents=[parent_parser])
     parser_modeling.add_argument('--features', nargs='+', default=['SSM', 'vvs', 's'], help="Feature list for ML models.\n(default: 'SSM' 'vvs' 's')")
+    parser_modeling.add_argument('--models', default=default_models_str, help=f'RT models in JSON format for naming exports.\n(default: \'{default_models_str}\')')
     parser_modeling.add_argument('--gee-project-id', help='Google Earth Engine project ID for model deployment.\nIf not provided, models are not deployed.')
     parser_modeling.set_defaults(func=modeling_command)
 

@@ -6,6 +6,7 @@ import ee
 import re
 import csv
 import os
+import uuid
 import geemap
 import numpy as np
 from geemap import ml
@@ -29,19 +30,27 @@ class RegressionRF:
             (if bootstrap=True) and the sampling of the features to consider when looking for the best split
             at each node (if max_features < n_features). The default is 42.
         """
-        self.model = RandomForestRegressor(n_estimators=15, random_state=42, max_depth=15)
         self.workspace_dir = workspace_dir
-        self.df = df
+        self.df = df.copy()
+        self.df.columns = self.df.columns.map(lambda c: c.lower() if isinstance(c, str) else c)
+        self._trained_feature_map = {}
     
 
-    def run(self, vars):
+    def run(self, vars, n_estimators=15, random_state=42, max_depth=15):
         trained_models = {}
         for var in tqdm(vars, desc="Training ensemble models"):
-            trained_models[var] = self.__train(var)
+            model = RandomForestRegressor(n_estimators=n_estimators, random_state=random_state, max_depth=max_depth)
+            trained_models[var] = self.__train(model, var)
             
         return trained_models
     
-    def __split_data(self, df, var, test_size=0.2, random_state=42):
+    def __features_for_var(self, var):
+        var_lower = str(var).lower()
+        if var_lower == 'ssm':
+            return ['angle', 'vvs', 's', 'l', 'year', 'doy', 'lc', 'op']
+        return ['vh', 'vv', 'angle', 'rvi', 'year', 'doy', 'lc', 'op']
+
+    def __split_data(self, var, test_size=0.2, random_state=42):
         """
         Splits the data into training and testing sets.
 
@@ -62,17 +71,23 @@ class RegressionRF:
             A tuple containing the training and testing sets.
         """
         
-        if var == 'ssm':
-            features = ['angle', 'vvs', 's', 'l', 'year', 'doy', 'lc', 'op']
-        else:
-            features = ['VH', 'VV', 'angle', 'rvi', 'year', 'doy', 'lc', 'op']
-        
-        X = df[features]
-        y = df[var]
+        features = self.__features_for_var(var)
+        self._trained_feature_map[var] = features
+
+        # Print the features being used for training
+        tqdm.write(f"Training model for '{var}' using features: {features}")
+
+        var_lower = str(var).lower()
+        if var_lower not in self.df.columns:
+            available = ', '.join(sorted(self.df.columns))
+            raise KeyError(f"Target column '{var}' (as '{var_lower}') not found. Available columns: {available}")
+
+        X = self.df[features]
+        y = self.df[var_lower]
         
         return train_test_split(X, y, test_size=test_size, random_state=random_state)
     
-    def __train(self, var):
+    def __train(self, model, var):
         """
         Trains the Random Forest Regressor model.
 
@@ -83,14 +98,14 @@ class RegressionRF:
         y_train : array-like of shape (n_samples,) or (n_samples, n_outputs)
             The target values (real numbers).
         """
-        X_train, X_test, y_train, y_test = self.__split_data(self.df, var)
-        reg_rf = self.model.fit(X_train, y_train)
+        X_train, X_test, y_train, y_test = self.__split_data(var)
+        reg_rf = model.fit(X_train, y_train)
 
         # Make predictions
-        y_pred = self.model.predict(X_test)
+        y_pred = model.predict(X_test)
 
         # Evaluate the model
-        r2 = self.model.score(X_test, y_test)
+        r2 = model.score(X_test, y_test)
         mae = mean_absolute_error(y_test, y_pred)
         mse = mean_squared_error(y_test, y_pred)
         rmse = np.sqrt(mse)
@@ -111,8 +126,30 @@ class RegressionRF:
     
     def __clean_tree(self, tree):
         return re.sub(r'\s+', ' ', tree)  # Replace multiple spaces with a single space
-    
-    def upload_rf_to_gee(self, tranied_rfs, gee_project_id, save_dectree=False):
+
+    def __asset_exists(self, asset_id):
+        try:
+            ee.data.getAsset(asset_id)
+            return True
+        except Exception:
+            return False
+
+    def __resolve_backscatter_tag(self, rt_models):
+        if not rt_models:
+            return 'ENSEMBLE'
+        tag = str(rt_models.get('RT_s', 'ENSEMBLE')).strip()
+        sanitized = re.sub(r'[^A-Za-z0-9_]+', '', tag.upper())
+        return sanitized if sanitized else 'ENSEMBLE'
+
+    def __unique_asset_name(self, asset_root, base_name):
+        while True:
+            suffix = uuid.uuid4().hex[:6]
+            candidate = f"{base_name}_{suffix}"
+            asset_id = f"{asset_root}/{candidate}"
+            if not self.__asset_exists(asset_id):
+                return candidate, asset_id
+
+    def upload_rf_to_gee(self, tranied_rfs, gee_project_id, rt_models=None, save_dectree=False):
         # Initialize the Earth Engine API.
         # This is done here to ensure it's initialized even if this module is run standalone.
         try:
@@ -121,19 +158,23 @@ class RegressionRF:
             # If the above fails (e.g., in some environments), geemap provides a robust fallback.
             geemap.ee_initialize(project=gee_project_id)
 
-        # Get the user's GEE asset root folder ID directly using the ee API.
-        try:
-            asset_root = ee.data.getAssetRoots()[0]['id']
-        except Exception as e:
-            raise Exception(f"Could not retrieve GEE asset root. Please check authentication. Details: {e}")
+        asset_root = f"projects/{gee_project_id}/assets"
 
         for var, model in tqdm(tranied_rfs.items(), desc="Uploading models to GEE"):
             n_estimators = model.n_estimators
             mdepth = model.max_depth
-            rfname = f"ensemble_trees_{var}_n{n_estimators}_md{mdepth}"
-            feature_names = model.feature_names_in_
-
-            asset_id = f"{asset_root}/{rfname}"
+            backscatter_tag = self.__resolve_backscatter_tag(rt_models)
+            base_name = f"{backscatter_tag}_ensemble_trees_{var}_n{n_estimators}_md{mdepth}"
+            rfname, asset_id = self.__unique_asset_name(asset_root, base_name)
+            feature_names = self._trained_feature_map.get(var, list(model.feature_names_in_))
+            print(f"Uploading model for '{var}' as asset '{asset_id}' with features: {feature_names}")
+            
+            # Ensure all expected features are present in the model
+            missing = set(feature_names) - set(model.feature_names_in_)
+            if missing:
+                raise ValueError(
+                    f"Trained model for '{var}' is missing expected features: {sorted(missing)}."
+                )
 
             # This is the critical function from geemap that performs the complex
             # serialization of the scikit-learn model into a GEE-compatible format.

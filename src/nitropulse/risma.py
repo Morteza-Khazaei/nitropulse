@@ -187,13 +187,11 @@ class RismaData:
         requested_depth_cm = to_depth_cm(depth)
         texture_df = self.load_stations_texture(depth=requested_depth_cm)
 
-        # Merge the dataframes based on the 'Station' column
-        df_RISMA = pd.merge(pivoted, texture_df, left_on='station', right_on='Station', how='left')
-        # Ensure a valid 'Station' key exists for downstream joins even if texture is missing
-        if 'Station' in df_RISMA.columns:
-            df_RISMA['Station'] = df_RISMA['Station'].fillna(df_RISMA['station'])
-        else:
-            df_RISMA['Station'] = df_RISMA['station']
+        # Merge the dataframes based on the station column
+        df_RISMA = pd.merge(pivoted, texture_df, on='station', how='left')
+
+        # Normalize column names to lowercase for downstream consistency
+        df_RISMA.columns = df_RISMA.columns.map(lambda c: c.lower() if isinstance(c, str) else c)
 
         return df_RISMA
 
@@ -232,7 +230,7 @@ class RismaData:
 
         # Flatten into rows
         all_data = [
-            {"Station": station, **measurement}
+            {"station": station, **measurement}
             for station, measurements in rima_stations.items()
             for measurement in measurements
         ]
@@ -241,21 +239,21 @@ class RismaData:
 
         # Rename columns for better readability
         df_texture = df_texture.rename(columns={
-            "depth_cm": "Depth (cm)",
+            "depth_cm": "depth_cm",
             "density_gcm3": "bulk",
-            "sand_pct": "Sand",
-            "silt_pct": "Silt",
-            "clay_pct": "Clay",
-            "classification": "Classification"
+            "sand_pct": "sand",
+            "silt_pct": "silt",
+            "clay_pct": "clay",
+            "classification": "classification"
         })
 
         # Keep rows with requested depth (cm)
-        df_texture = df_texture[df_texture['Depth (cm)'] == depth]
+        df_texture = df_texture[df_texture['depth_cm'] == depth]
 
         # Normalize soil texture percentages to 0 to 1 range
-        df_texture['Sand'] = df_texture['Sand'] / 100
-        df_texture['Silt'] = df_texture['Silt'] / 100
-        df_texture['Clay'] = df_texture['Clay'] / 100
+        df_texture['sand'] = df_texture['sand'] / 100
+        df_texture['silt'] = df_texture['silt'] / 100
+        df_texture['clay'] = df_texture['clay'] / 100
 
         return df_texture
 

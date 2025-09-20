@@ -257,6 +257,9 @@ class S1Data:
         # Cast lc to int then str
         df_S1_cat['lc'] = df_S1_cat['lc'].astype(int).astype(str)
 
+        # Normalize column names to lowercase for downstream consistency
+        df_S1_cat.columns = df_S1_cat.columns.map(lambda c: c.lower() if isinstance(c, str) else c)
+
         return df_S1_cat
 
 
@@ -300,7 +303,10 @@ class S1Data:
             values=df_t.columns.difference(['date', 'op', 'year', 'doy', 'band'])[0]  # usually the value column
         ).reset_index()
         
-        gp_df['Station'] = station
+        gp_df['station'] = station
+
+        # Ensure column names are lowercase prior to returning
+        gp_df.columns = gp_df.columns.map(lambda c: c.lower() if isinstance(c, str) else c)
 
         return gp_df
     

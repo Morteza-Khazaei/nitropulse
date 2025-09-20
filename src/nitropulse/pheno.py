@@ -43,6 +43,10 @@ class BBCH:
 
     def get_pheno_df(self):
         
+        # Normalize column names to lowercase to avoid downstream casing issues
+        self.df_risma.columns = self.df_risma.columns.map(lambda c: c.lower() if isinstance(c, str) else c)
+        self.df_S1.columns = self.df_S1.columns.map(lambda c: c.lower() if isinstance(c, str) else c)
+
         # Time-based merge: align S1 (UTC) with nearest RISMA timestamp (UTC) per Station
         # Ensure datetime columns
         self.df_risma = self.df_risma.sort_values('date')
@@ -53,7 +57,7 @@ class BBCH:
             self.df_S1,
             self.df_risma,
             on='date',
-            by='Station',
+            by='station',
             tolerance=pd.Timedelta('2h'),
             direction='nearest'
         )
@@ -67,43 +71,43 @@ class BBCH:
                 merged_df.drop(columns=[col], inplace=True)
         
         # drop nodata inplace based on VV and VH
-        merged_df.dropna(subset=['VV', 'VH', 'angle'], inplace=True)
+        merged_df.dropna(subset=['vv', 'vh', 'angle'], inplace=True)
 
-        # Create a new column 'BASE_TEMP' in merged_df
-        merged_df['BASE_TEMP'] = merged_df['lc'].map(self.crop_base_temp)
+        # Create a new column 'base_temp' in merged_df
+        merged_df['base_temp'] = merged_df['lc'].map(self.crop_base_temp)
 
         #  Use interploate to fill Nan in SST
-        merged_df['SST'] = merged_df['SST'].interpolate()
+        merged_df['sst'] = merged_df['sst'].interpolate()
 
         # Calculate cumulative GDD for air and soil using vectorized groupby
-        merged_df['cum_GDD_air'] = (
-            (merged_df['mean_airt'] - merged_df['BASE_TEMP'])
+        merged_df['cum_gdd_air'] = (
+            (merged_df['mean_airt'] - merged_df['base_temp'])
             .clip(lower=0)
             .groupby(merged_df['year'])
             .cumsum()
         )
 
-        merged_df['cum_GDD_soil'] = (
-            (merged_df['mean_sst'] - merged_df['BASE_TEMP'])
+        merged_df['cum_gdd_soil'] = (
+            (merged_df['mean_sst'] - merged_df['base_temp'])
             .clip(lower=0)
             .groupby(merged_df['year'])
             .cumsum()
         )
         
         # add cum_GDD based on mean of GDD
-        merged_df['cum_GDD'] = merged_df[['cum_GDD_air', 'cum_GDD_soil']].mean(axis=1)
+        merged_df['cum_gdd'] = merged_df[['cum_gdd_air', 'cum_gdd_soil']].mean(axis=1)
         # For non-ag landcover classes (e.g., 30, 34), do not compute phenology metrics
         non_ag = merged_df['lc'].isin(['30', '34'])
-        merged_df.loc[non_ag, ['cum_GDD_air', 'cum_GDD_soil', 'cum_GDD']] = pd.NA
+        merged_df.loc[non_ag, ['cum_gdd_air', 'cum_gdd_soil', 'cum_gdd']] = pd.NA
 
         tqdm.pandas(desc="Calculating BBCH")
         # Calculate BBCH stage based on cumulative GDD and soil temperature
-        merged_df['BBCH'] = merged_df.progress_apply(lambda row: self.get_bbch_from_soil_gdd(row['lc'], row['cum_GDD'], row['SST']), axis=1)
-        merged_df.loc[non_ag, 'BBCH'] = pd.NA
+        merged_df['bbch'] = merged_df.progress_apply(lambda row: self.get_bbch_from_soil_gdd(row['lc'], row['cum_gdd'], row['sst']), axis=1)
+        merged_df.loc[non_ag, 'bbch'] = pd.NA
 
         # Calculate the cumulative sum of SSM for each year
-        merged_df['cum_SSM'] = merged_df.groupby('year')['SSM'].cumsum()
-        merged_df.loc[non_ag, 'cum_SSM'] = pd.NA
+        merged_df['cum_ssm'] = merged_df.groupby('year')['ssm'].cumsum()
+        merged_df.loc[non_ag, 'cum_ssm'] = pd.NA
 
         return merged_df
     
