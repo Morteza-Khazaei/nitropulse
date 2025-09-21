@@ -168,6 +168,12 @@ class RegressionRF:
             base_test = self.df.loc[X_test.index].copy()
             base_test[f'{target_name}_pred'] = y_pred
             payload['test_df'] = base_test.reset_index(drop=True)
+        else:
+            target_name = str(var).lower()
+            base_test = self.df.loc[X_test.index].copy()
+            base_test[target_name] = y_test.values
+            base_test[f'{target_name}_pred'] = y_pred
+            payload['test_df'] = base_test.reset_index(drop=True)
 
         return payload
 
