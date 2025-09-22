@@ -654,18 +654,28 @@ def plot_timeseries(
     precip_col: str = "prcp",
     sst_col: str = "sst",
     freeze_threshold: float = 0.0,
-    separate_rows: bool = False,
+    share_year: bool = False,
     title_text: Optional[str] = None,
     precip_opacity: float = 0.6,
+    separate_rows: Optional[bool] = None,
 ) -> go.Figure:
     """Create a time-series validation view combining RISMA and predictions.
 
     Parameters are flexible enough to support different column naming
     conventions (defaults reflect the lowercase schema used in nitropulse).
-    ``target_label`` lets you override the figure axis/title text while keeping
-    the actual column name intact. ``precip_opacity`` controls the alpha of
-    precipitation bars (default 0.6).
+    ``target_label`` lets you override the figure axis text while keeping the
+    actual column name intact. ``share_year`` controls whether each year gets
+    its own subplot, bringing all stations/crops for the same period together.
+    ``precip_opacity`` controls the alpha of precipitation bars (default 0.6).
     """
+
+    if separate_rows is not None:
+        warnings.warn(
+            "'separate_rows' is deprecated; use 'share_year' instead (note the inverted semantics).",
+            FutureWarning,
+            stacklevel=2,
+        )
+        share_year = not separate_rows
 
     holdout_subset = build_holdout_subset(
         holdout_df,
@@ -693,12 +703,77 @@ def plot_timeseries(
     obs_subset[date_col] = pd.to_datetime(obs_subset[date_col])
     holdout_subset[date_col] = pd.to_datetime(holdout_subset[date_col])
 
-    combos_df = holdout_subset[[station_col, year_col]].dropna()
-    if combos_df.empty:
-        combos_df = obs_subset[[station_col, year_col]].dropna()
-    combos = list(combos_df.drop_duplicates().apply(lambda r: (r[station_col], r[year_col]), axis=1))
+    display_target = (target_label or target).replace('_', ' ').upper()
+
+    def _normalize_key(value):
+        if value is None or pd.isna(value):
+            return None
+        if isinstance(value, (np.integer, int)):
+            return int(value)
+        if isinstance(value, (np.floating, float)):
+            if np.isnan(value):
+                return None
+            if float(value).is_integer():
+                return int(value)
+            return float(value)
+        return str(value)
+
+    combo_columns = []
+    if crop_col in holdout_subset.columns or crop_col in obs_subset.columns:
+        combo_columns.append(crop_col)
+    if year_col in holdout_subset.columns or year_col in obs_subset.columns:
+        combo_columns.append(year_col)
+
+    share_year_enabled = share_year and (year_col in combo_columns)
+
+    combos: set[tuple] = set()
+    color_key_columns: tuple[str, ...] = ()
+
+    def _collect_keys(columns: tuple[str, ...], *, require: tuple[str, ...] | None = None) -> list[tuple]:
+        frames: list[pd.DataFrame] = []
+        for df in (holdout_subset, obs_subset):
+            if all(col in df.columns for col in columns):
+                frames.append(df[list(columns)].copy())
+        if not frames:
+            return []
+        merged = pd.concat(frames, ignore_index=True)
+        keys: list[tuple] = []
+        required_cols = require or columns
+        for _, row in merged.iterrows():
+            normalized = []
+            valid = True
+            for col in columns:
+                value = _normalize_key(row[col] if col in row else None)
+                normalized.append(value)
+            for col, value in zip(columns, normalized):
+                if col in required_cols and value is None:
+                    valid = False
+                    break
+            if valid:
+                keys.append(tuple(normalized))
+        return list(dict.fromkeys(keys))
+
+    priority = [
+        ( (year_col, crop_col, station_col), (year_col, station_col) ),
+        ( (year_col, station_col), (year_col, station_col) ),
+        ( (crop_col, station_col), (station_col,) ),
+        ( (year_col, crop_col), (year_col,) ),
+        ( (station_col,), (station_col,) ),
+    ]
+
+    for columns, required in priority:
+        keys = _collect_keys(columns, require=required)
+        if keys:
+            color_key_columns = columns
+            combos.update(keys)
+            break
+
     if not combos:
-        combos = [(stations_available[0], None)]
+        combos.add((_normalize_key(stations_available[0]), None))
+        color_key_columns = (station_col,)
+
+    combos = sorted(combos, key=lambda key: tuple(str(part) for part in key))
+
     palette_global = _get_palette(len(combos))
     combo_to_color = {combo: palette_global[idx % len(palette_global)] for idx, combo in enumerate(combos)}
     symbols = [
@@ -710,14 +785,6 @@ def plot_timeseries(
         "triangle-up",
         "triangle-down",
     ]
-
-    display_target = (target_label or target).replace('_', ' ').upper()
-
-    combo_columns = []
-    if crop_col in holdout_subset.columns or crop_col in obs_subset.columns:
-        combo_columns.append(crop_col)
-    if year_col in holdout_subset.columns or year_col in obs_subset.columns:
-        combo_columns.append(year_col)
 
     if combo_columns:
         def _extract(df):
@@ -735,25 +802,56 @@ def plot_timeseries(
         if unique_combos.empty:
             unique_combos = pd.DataFrame({col: [None] for col in combo_columns})
         unique_combos = unique_combos.drop_duplicates().sort_values(combo_columns).reset_index(drop=True)
+
+        if share_year_enabled:
+            year_values = []
+            if year_col in unique_combos.columns:
+                year_values = [
+                    yr for yr in unique_combos[year_col].dropna().unique().tolist()
+                ]
+            if not year_values and year_col in obs_subset.columns:
+                year_values = obs_subset[year_col].dropna().unique().tolist()
+            if not year_values and year_col in holdout_subset.columns:
+                year_values = holdout_subset[year_col].dropna().unique().tolist()
+
+            year_values = sorted(year_values)
+            if not year_values:
+                year_values = [None]
+
+            data: dict[str, list] = {year_col: year_values}
+            if crop_col in combo_columns:
+                data[crop_col] = [None] * len(year_values)
+
+            unique_combos = pd.DataFrame(data)
+            column_order = [col for col in (crop_col, year_col) if col in unique_combos.columns]
+            if column_order:
+                unique_combos = unique_combos[column_order]
     else:
         unique_combos = pd.DataFrame({crop_col: [None], year_col: [None]})
 
-    row_labels: list[str] = []
-    if separate_rows:
-        for combo in unique_combos.itertuples(index=False):
-            crop_val = getattr(combo, crop_col, None)
-            year_val = getattr(combo, year_col, None)
-            label = " | ".join(
-                [str(v) for v in (crop_val, year_val) if v is not None]
-            ) or "All"
-            row_labels.append(label)
+    stack_crops_by_year = crop_col in color_key_columns
 
+    row_labels: list[str] = []
+    multirow = share_year_enabled
+    if share_year_enabled:
+        for combo in unique_combos.itertuples(index=False):
+            year_val = getattr(combo, year_col, None)
+            if pd.isna(year_val):
+                row_labels.append("All years")
+            else:
+                row_labels.append(f"Year {int(year_val) if isinstance(year_val, (int, np.integer)) else year_val}")
+
+    if multirow:
+        if row_labels:
+            row_title_display = ["" for _ in row_labels]
+        else:
+            row_title_display = ["" for _ in unique_combos.index]
         fig = make_subplots(
             rows=len(unique_combos),
             cols=1,
             shared_xaxes=False,
             specs=[[{"secondary_y": True}] for _ in unique_combos.index],
-            row_titles=["" for _ in unique_combos.index],
+            row_titles=row_title_display,
             vertical_spacing=0.05 if len(unique_combos) > 1 else 0.08,
         )
     else:
@@ -762,7 +860,7 @@ def plot_timeseries(
     seen_legends = set()
     legend_titles_seen: set[str] = set()
     precip_added = False
-    combined_precip_series: list[tuple[Optional[str], str, pd.Series]] = []
+    row_ranges: dict[int, list[pd.Timestamp]] = {}
 
     x_axis_label = "Date"
     y_axis_label_left = "Soil Moisture (m³/m³)"
@@ -771,9 +869,17 @@ def plot_timeseries(
     for row_idx, combo in enumerate(unique_combos.itertuples(index=False), start=1):
         crop_val = getattr(combo, crop_col, None)
         year_val = getattr(combo, year_col, None)
-        row = row_idx if separate_rows else 1
-        if separate_rows:
-            combo_label = row_labels[row_idx - 1]
+        if share_year_enabled and crop_col in color_key_columns:
+            crop_val = None
+        row = row_idx if multirow else 1
+        existing_range = row_ranges.get(row)
+        if existing_range:
+            row_min_date, row_max_date = existing_range
+        else:
+            row_min_date = None
+            row_max_date = None
+        if share_year_enabled:
+            combo_label = row_labels[row_idx - 1] if row_labels else None
         else:
             label_parts = [str(v) for v in (crop_val, year_val) if v is not None]
             combo_label = " | ".join(label_parts) if label_parts else None
@@ -804,111 +910,190 @@ def plot_timeseries(
             if obs_station.empty:
                 continue
 
-            years_available = sorted(hold_station[year_col].dropna().unique()) if year_col in hold_station else []
+            if share_year_enabled and year_val is not None:
+                years_available = [year_val]
+            else:
+                years_available = (
+                    sorted(hold_station[year_col].dropna().unique())
+                    if year_col in hold_station
+                    else []
+                )
             if not years_available:
                 years_available = sorted(obs_station[year_col].dropna().unique())
 
             for idx, yr in enumerate(years_available):
-                obs_year = obs_station[obs_station[year_col] == yr]
+                if year_col in obs_station.columns and yr is not None:
+                    obs_year = obs_station[obs_station[year_col] == yr]
+                else:
+                    obs_year = obs_station.copy()
                 if obs_year.empty:
                     continue
-                combo_key = (station_name, yr)
-                color = combo_to_color.get(combo_key, palette_global[idx % len(palette_global)])
 
-                legend_key_obs = ("Observed", station_name, yr)
-                legend_key_pred = ("Prediction", station_name, yr)
-                showlegend_obs = True if separate_rows else (legend_key_obs not in seen_legends)
-                showlegend_pred = True if separate_rows else (legend_key_pred not in seen_legends)
-
-                if showlegend_obs and not separate_rows:
-                    seen_legends.add(legend_key_obs)
-
-                legend_group_value_obs = combo_label or "Observed"
-                legend_title_obs = None
-                if showlegend_obs and combo_label and combo_label not in legend_titles_seen:
-                    legend_titles_seen.add(combo_label)
-                    legend_title_obs = combo_label
-
-                if combo_label:
-                    name_obs = f"Observed {station_name}"
+                if year_col in hold_station.columns and yr is not None:
+                    hold_year = hold_station[hold_station[year_col] == yr]
                 else:
-                    suffix = f" ({yr})" if yr is not None else ""
-                    name_obs = f"Observed {station_name}{suffix}"
+                    hold_year = hold_station.copy()
 
-                trace_obs = go.Scatter(
-                    x=obs_year[date_col],
-                    y=obs_year[target],
-                    mode="lines",
-                    line=dict(color=color, width=2),
-                    name=name_obs,
-                    showlegend=showlegend_obs,
-                    legendgroup=legend_group_value_obs,
-                    legendgrouptitle=dict(text=legend_title_obs) if legend_title_obs else None,
-                )
-                fig.add_trace(trace_obs, row=row, col=1, secondary_y=False)
+                if stack_crops_by_year:
+                    crop_values: set = set()
+                    if crop_col in obs_year.columns:
+                        crop_values.update(obs_year[crop_col].dropna().unique().tolist())
+                    if crop_col in hold_year.columns:
+                        crop_values.update(hold_year[crop_col].dropna().unique().tolist())
+                    crop_iter = sorted(crop_values, key=lambda v: str(v))
+                    if not crop_iter:
+                        crop_iter = [None]
+                else:
+                    crop_iter = [crop_val]
 
-                hold_year = hold_station[hold_station[year_col] == yr]
-                if not hold_year.empty:
-                    if showlegend_pred and not separate_rows:
-                        seen_legends.add(legend_key_pred)
-                    legend_group_value_pred = combo_label or "Prediction"
-                    legend_title_pred = None
-                    if showlegend_pred and combo_label and combo_label not in legend_titles_seen:
+                for crop_idx, crop_value in enumerate(crop_iter):
+                    obs_crop = obs_year
+                    if crop_value is not None and crop_col in obs_crop.columns:
+                        obs_crop = obs_crop[obs_crop[crop_col] == crop_value]
+                    if obs_crop.empty:
+                        continue
+
+                    if crop_value is not None and crop_col in hold_year.columns:
+                        hold_crop = hold_year[hold_year[crop_col] == crop_value]
+                    else:
+                        hold_crop = hold_year
+
+                    norm_year = _normalize_key(yr)
+                    norm_crop = _normalize_key(crop_value)
+                    norm_station = _normalize_key(station_name)
+
+                    mapping = {
+                        year_col: norm_year,
+                        crop_col: norm_crop,
+                        station_col: norm_station,
+                    }
+                    color_key = tuple(mapping.get(col, None) for col in color_key_columns)
+                    fallback_index = (idx + crop_idx) % len(palette_global)
+                    color = combo_to_color.get(color_key, palette_global[fallback_index])
+
+                    legend_key_obs = ("Observed", station_name, yr, crop_value)
+                    legend_key_pred = ("Prediction", station_name, yr, crop_value)
+                    showlegend_obs = True if multirow else (legend_key_obs not in seen_legends)
+                    showlegend_pred = True if multirow else (legend_key_pred not in seen_legends)
+
+                    if showlegend_obs and not multirow:
+                        seen_legends.add(legend_key_obs)
+
+                    legend_group_value_obs = combo_label or "Observed"
+                    legend_title_obs = None
+                    if showlegend_obs and combo_label and combo_label not in legend_titles_seen:
                         legend_titles_seen.add(combo_label)
-                        legend_title_pred = combo_label
+                        legend_title_obs = combo_label
+
+                    crop_suffix = ""
+                    crop_display_str: Optional[str] = None
+                    if crop_value is not None and not pd.isna(crop_value):
+                        crop_display = int(crop_value) if isinstance(crop_value, (int, np.integer)) else crop_value
+                        crop_display_str = str(crop_display)
+                        crop_suffix = f" ({crop_display_str})"
+
+                    if not obs_crop.empty and date_col in obs_crop.columns:
+                        crop_min = obs_crop[date_col].min()
+                        crop_max = obs_crop[date_col].max()
+                        if pd.notna(crop_min):
+                            row_min_date = crop_min if row_min_date is None else min(row_min_date, crop_min)
+                        if pd.notna(crop_max):
+                            row_max_date = crop_max if row_max_date is None else max(row_max_date, crop_max)
 
                     if combo_label:
-                        name_pred = f"Prediction {station_name}"
+                        name_obs = f"Observed {station_name}{crop_suffix}"
                     else:
-                        suffix = f" ({yr})" if yr is not None else ""
-                        name_pred = f"Prediction {station_name}{suffix}"
+                        suffix_parts: list[str] = []
+                        if yr is not None and not pd.isna(yr):
+                            yr_display = int(yr) if isinstance(yr, (int, np.integer)) else yr
+                            suffix_parts.append(str(yr_display))
+                        if crop_display_str is not None:
+                            suffix_parts.append(crop_display_str)
+                        suffix = f" ({', '.join(part for part in suffix_parts if part)})" if suffix_parts else ""
+                        name_obs = f"Observed {station_name}{suffix}"
 
-                    trace_pred = go.Scatter(
-                        x=hold_year[date_col],
-                        y=hold_year[f"{target}_pred"],
-                        mode="markers",
-                        marker=dict(
-                            color=color,
-                            size=7,
-                            symbol=symbols[idx % len(symbols)],
-                            line=dict(width=1, color="#1f1f20"),
-                        ),
-                        name=name_pred,
-                        showlegend=showlegend_pred,
-                        legendgroup=legend_group_value_pred,
-                        legendgrouptitle=dict(text=legend_title_pred) if legend_title_pred else None,
+                    trace_obs = go.Scatter(
+                        x=obs_crop[date_col],
+                        y=obs_crop[target],
+                        mode="lines",
+                        line=dict(color=color, width=2),
+                        name=name_obs,
+                        showlegend=showlegend_obs,
+                        legendgroup=legend_group_value_obs,
+                        legendgrouptitle=dict(text=legend_title_obs) if legend_title_obs else None,
                     )
-                    fig.add_trace(trace_pred, row=row, col=1, secondary_y=False)
+                    fig.add_trace(trace_obs, row=row, col=1, secondary_y=False)
 
-                if (
-                    precip_col in obs_year.columns
-                    and date_col in obs_year.columns
-                    and not obs_year[precip_col].isna().all()
-                ):
-                    prcp_daily_year = (
-                        obs_year[[date_col, precip_col]]
-                        .set_index(date_col)
-                        .resample('D', label='left', closed='left')
-                        .sum(min_count=1)
-                        .fillna(0)
-                    )
+                    if not hold_crop.empty:
+                        if showlegend_pred and not multirow:
+                            seen_legends.add(legend_key_pred)
+                        legend_group_value_pred = combo_label or "Prediction"
+                        legend_title_pred = None
+                        if showlegend_pred and combo_label and combo_label not in legend_titles_seen:
+                            legend_titles_seen.add(combo_label)
+                            legend_title_pred = combo_label
+
+                        if combo_label:
+                            name_pred = f"Prediction {station_name}{crop_suffix}"
+                        else:
+                            suffix_parts_pred: list[str] = []
+                            if yr is not None and not pd.isna(yr):
+                                yr_display = int(yr) if isinstance(yr, (int, np.integer)) else yr
+                                suffix_parts_pred.append(str(yr_display))
+                            if crop_display_str is not None:
+                                suffix_parts_pred.append(crop_display_str)
+                            suffix_pred = (
+                                f" ({', '.join(part for part in suffix_parts_pred if part)})"
+                                if suffix_parts_pred
+                                else ""
+                            )
+                            name_pred = f"Prediction {station_name}{suffix_pred}"
+
+                        trace_pred = go.Scatter(
+                            x=hold_crop[date_col],
+                            y=hold_crop[f"{target}_pred"],
+                            mode="markers",
+                            marker=dict(
+                                color=color,
+                                size=7,
+                                symbol=symbols[(idx + crop_idx) % len(symbols)],
+                                line=dict(width=1, color="#1f1f20"),
+                            ),
+                            name=name_pred,
+                            showlegend=showlegend_pred,
+                            legendgroup=legend_group_value_pred,
+                            legendgrouptitle=dict(text=legend_title_pred) if legend_title_pred else None,
+                        )
+                        fig.add_trace(trace_pred, row=row, col=1, secondary_y=False)
+
+                        if date_col in hold_crop.columns:
+                            hold_min = hold_crop[date_col].min()
+                            hold_max = hold_crop[date_col].max()
+                            if pd.notna(hold_min):
+                                row_min_date = hold_min if row_min_date is None else min(row_min_date, hold_min)
+                            if pd.notna(hold_max):
+                                row_max_date = hold_max if row_max_date is None else max(row_max_date, hold_max)
+
                     if (
-                        not prcp_daily_year.empty
-                        and prcp_daily_year[precip_col].abs().sum() > 0
+                        precip_col in obs_crop.columns
+                        and date_col in obs_crop.columns
+                        and not obs_crop[precip_col].isna().all()
                     ):
-                        precip_label = str(station_name) if pd.notna(station_name) else "Station"
-                        if not combo_label:
-                            label_suffix = None
-                            if pd.notna(yr):
-                                label_suffix = yr
-                            elif pd.notna(year_val):
-                                label_suffix = year_val
-                            elif pd.notna(crop_val):
-                                label_suffix = crop_val
-                            if label_suffix is not None:
-                                precip_label = f"{precip_label} ({label_suffix})"
+                        prcp_daily_crop = (
+                            obs_crop[[date_col, precip_col]]
+                            .set_index(date_col)
+                            .resample('D', label='left', closed='left')
+                            .sum(min_count=1)
+                            .fillna(0)
+                        )
+                        if (
+                            not prcp_daily_crop.empty
+                            and prcp_daily_crop[precip_col].abs().sum() > 0
+                        ):
+                            precip_label = str(station_name) if pd.notna(station_name) else "Station"
+                            if not combo_label and pd.notna(yr):
+                                precip_label = f"{precip_label} ({yr})"
 
-                        if separate_rows:
                             legend_group_value_precip = combo_label or "Precipitation"
                             legend_title_precip = None
                             if combo_label and combo_label not in legend_titles_seen:
@@ -916,8 +1101,8 @@ def plot_timeseries(
                                 legend_title_precip = combo_label
 
                             trace_precip = go.Bar(
-                                x=prcp_daily_year.index,
-                                y=prcp_daily_year[precip_col].values,
+                                x=prcp_daily_crop.index,
+                                y=prcp_daily_crop[precip_col].values,
                                 name=f"Precipitation {precip_label}",
                                 marker_color=color,
                                 opacity=precip_opacity,
@@ -927,9 +1112,9 @@ def plot_timeseries(
                             )
                             fig.add_trace(trace_precip, row=row, col=1, secondary_y=True)
                             precip_added = True
-                        else:
-                            combined_precip_series.append((combo_label, precip_label, prcp_daily_year[precip_col]))
-                            precip_added = True
+
+        if row_min_date is not None and row_max_date is not None:
+            row_ranges[row] = [row_min_date, row_max_date]
 
         # Freeze shading aggregated per crop-year
         freeze_spans = _freeze_spans_from_soil_temperature(
@@ -949,7 +1134,7 @@ def plot_timeseries(
                 col=1,
             )
 
-    row_count = len(unique_combos) if separate_rows else 1
+    row_count = len(unique_combos) if multirow else 1
 
     legend_config = dict(
         orientation="v",
@@ -976,7 +1161,7 @@ def plot_timeseries(
 
     legend_height, legend_width = _legend_size()
 
-    if separate_rows:
+    if multirow:
         margin = dict(l=110, r=max(240, 60 + legend_width // 2), t=120, b=130)
         height = max(280 * row_count + 170, legend_height + 100)
         yaxis_config = dict(title=None)
@@ -985,9 +1170,11 @@ def plot_timeseries(
         height = max(360 * row_count, legend_height + 120)
         yaxis_config = dict(title=display_target)
 
+    layout_title = (dict(text=title_text, x=0.5, xanchor="center") if title_text else None)
+
     fig.update_layout(
         template="plotly_white",
-        title=None,
+        title=layout_title,
         yaxis=yaxis_config,
         legend=legend_config,
         margin=margin,
@@ -995,7 +1182,7 @@ def plot_timeseries(
         font=dict(size=12),
     )
 
-    if separate_rows:
+    if multirow:
         for idx in range(1, row_count + 1):
             fig.update_yaxes(
                 title=dict(text=y_axis_label_left, font=dict(size=13)),
@@ -1017,6 +1204,7 @@ def plot_timeseries(
                 tickformat=DATE_TICKFORMAT,
                 rangeslider=dict(visible=False),
                 ticklabelmode="period",
+                range=row_ranges.get(idx),
                 row=idx,
                 col=1,
             )
@@ -1027,29 +1215,9 @@ def plot_timeseries(
             tickformat=DATE_TICKFORMAT,
             rangeslider=dict(visible=False),
             ticklabelmode="period",
+            range=row_ranges.get(1),
         )
-        if combined_precip_series:
-            precip_palette = _get_palette(len(combined_precip_series))
-            for idx, (group_label, st_name, series) in enumerate(combined_precip_series):
-                legend_group_value = group_label or "Precipitation"
-                legend_title_precip = None
-                if group_label and group_label not in legend_titles_seen:
-                    legend_titles_seen.add(group_label)
-                    legend_title_precip = group_label
-                fig.add_trace(
-                    go.Bar(
-                        x=series.index,
-                        y=series.values,
-                        name=f"Precipitation {st_name}",
-                        marker_color=precip_palette[idx],
-                        opacity=precip_opacity,
-                        showlegend=True,
-                        legendgroup=legend_group_value,
-                        legendgrouptitle=dict(text=legend_title_precip) if legend_title_precip else None,
-                    ),
-                    secondary_y=True,
-                )
-        elif precip_col in obs_subset:
+        if not precip_added and precip_col in obs_subset:
             agg_precip = (
                 obs_subset[[date_col, precip_col]]
                 .set_index(date_col)
@@ -1151,8 +1319,18 @@ def create_timeseries_plot(
     """Convenience wrapper for :func:`plot_timeseries` with filtering.
 
     Accepts the same keyword arguments, including ``target_label`` for custom
-    axis text.
+    axis text. ``share_year=True`` mirrors the notebook behaviour where each
+    year is rendered on its own subplot.
     """
+
+    if "separate_rows" in kwargs:
+        separate_rows = kwargs.pop("separate_rows")
+        warnings.warn(
+            "'separate_rows' is deprecated; use 'share_year' instead (note the inverted semantics).",
+            FutureWarning,
+            stacklevel=2,
+        )
+        kwargs.setdefault("share_year", not separate_rows)
 
     return plot_timeseries(
         risma_df,
