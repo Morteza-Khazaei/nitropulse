@@ -97,17 +97,17 @@ class BBCH:
         # add cum_GDD based on mean of GDD
         merged_df['cum_gdd'] = merged_df[['cum_gdd_air', 'cum_gdd_soil']].mean(axis=1)
         # For non-ag landcover classes (e.g., 30, 34), do not compute phenology metrics
-        non_ag = merged_df['lc'].isin(['30', '34'])
-        merged_df.loc[non_ag, ['cum_gdd_air', 'cum_gdd_soil', 'cum_gdd']] = pd.NA
+        # non_ag = merged_df['lc'].isin(['30', '34'])
+        # merged_df.loc[non_ag, ['cum_gdd_air', 'cum_gdd_soil', 'cum_gdd']] = pd.NA
 
         tqdm.pandas(desc="Calculating BBCH")
         # Calculate BBCH stage based on cumulative GDD and soil temperature
         merged_df['bbch'] = merged_df.progress_apply(lambda row: self.get_bbch_from_soil_gdd(row['lc'], row['cum_gdd'], row['sst']), axis=1)
-        merged_df.loc[non_ag, 'bbch'] = pd.NA
+        # merged_df.loc[non_ag, 'bbch'] = pd.NA
 
         # Calculate the cumulative sum of SSM for each year
         merged_df['cum_ssm'] = merged_df.groupby('year')['ssm'].cumsum()
-        merged_df.loc[non_ag, 'cum_ssm'] = pd.NA
+        # merged_df.loc[non_ag, 'cum_ssm'] = pd.NA
 
         return merged_df
     

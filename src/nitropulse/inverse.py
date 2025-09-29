@@ -6,7 +6,7 @@ from scipy.interpolate import interp1d
 
 from aiem import AIEM0
 from ssrt import S2RTR
-from ssrt.surface import PRISM1, SMART
+from ssrt.surface import PRISM1, SMART, SPM3D
 from ssrt.utils import Dobson85
 
 
@@ -211,17 +211,25 @@ class Inverse:
                     sigma0 = aiem_obj.compute_sigma0(pol='vv', todB=False)
                     vv_soil = sigma0['vv'][0]
                     
-                elif self.models['RT_s'] == 'PRISM1':
+                if self.models['RT_s'] == 'PRISM1':
                     prism0 = PRISM1(f=self.fGHz, theta_i=theta_i, eps=eps, s=s)
                     sig_0_top_full = prism0.calc_sigma(todB=False)
                     sig_0_top = dict(zip(pol_list, sig_0_top_full))
 
                     vv_soil = sig_0_top['vv'][0]
                 
-                elif self.models['RT_s'] == 'SMART':
+                if self.models['RT_s'] == 'SMART':
 
                     smart = SMART(fGHz=self.fGHz, theta_deg=theta_i, s=s, eps=eps)
                     sig_0_full = smart.calc_sigma(todB=False)
+                    sig_0_top = dict(zip(pol_list, sig_0_full))
+
+                    vv_soil = sig_0_top['vv'][0]
+                
+                if self.models['RT_s'] == 'SPM3D':
+
+                    spm3d = SPM3D(fr=self.fGHz, sig=s, L=l, thi=theta_i, er=eps)
+                    sig_0_full = spm3d.calc_sigma(todB=False)
                     sig_0_top = dict(zip(pol_list, sig_0_full))
 
                     vv_soil = sig_0_top['vv'][0]

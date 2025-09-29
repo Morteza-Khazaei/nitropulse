@@ -21,6 +21,18 @@ from plotly.subplots import make_subplots
 from pathlib import Path
 
 DATE_TICKFORMAT = "%b %Y"
+FIGURE_SUBDIR = "figures"
+
+FONT_FAMILY_BASE = "DejaVu Sans, Helvetica, Arial, sans-serif"
+FONT_FAMILY_BOLD = "DejaVu Sans Bold, DejaVu Sans, Helvetica, Arial, sans-serif"
+LABEL_FONT_SIZE = 14
+TICK_FONT_SIZE = 12
+TITLE_FONT_SIZE = 18
+
+LEGEND_FONT = dict(size=LABEL_FONT_SIZE, family=FONT_FAMILY_BOLD)
+AXIS_TITLE_FONT = dict(size=LABEL_FONT_SIZE, family=FONT_FAMILY_BOLD)
+TITLE_FONT = dict(size=TITLE_FONT_SIZE, family=FONT_FAMILY_BOLD)
+TICK_FONT = dict(size=TICK_FONT_SIZE, family=FONT_FAMILY_BASE)
 
 
 def _as_list(value: Optional[Union[Iterable, str, int]]) -> Optional[list]:
@@ -226,6 +238,43 @@ def _ensure_vertical_legend_fit(
     )
 
 
+def _figure_root(workspace_dir: Optional[Union[str, Path]]) -> Path:
+    root = Path(workspace_dir).expanduser() if workspace_dir else (Path.home() / ".nitropulse")
+    base_dir = root / FIGURE_SUBDIR
+    base_dir.mkdir(parents=True, exist_ok=True)
+    return base_dir
+
+
+def _resolve_figure_path(
+    filename: Optional[Union[str, Path]],
+    prefix: str,
+    *,
+    workspace_dir: Optional[Union[str, Path]] = None,
+    extension: str,
+) -> Path:
+    base_dir = _figure_root(workspace_dir)
+
+    if filename:
+        path = Path(filename)
+        if not path.is_absolute():
+            path = base_dir / path
+    else:
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        path = base_dir / f"{prefix}_{timestamp}.{extension}"
+
+    suffix = f".{extension.lstrip('.')}"
+    return path.with_suffix(suffix)
+
+
+def _bold_text(text: Optional[str]) -> Optional[str]:
+    if not text:
+        return text
+    stripped = str(text)
+    if stripped.startswith("<b>") and stripped.endswith("</b>"):
+        return stripped
+    return f"<b>{stripped}</b>"
+
+
 def _save_figure(
     fig: go.Figure,
     filename: Optional[str],
@@ -240,19 +289,7 @@ def _save_figure(
     if fig is None:
         return None
 
-    root = Path(workspace_dir).expanduser() if workspace_dir else (Path.home() / ".nitropulse")
-    base_dir = root / "figures"
-    base_dir.mkdir(parents=True, exist_ok=True)
-
-    if filename:
-        path = Path(filename)
-        if not path.is_absolute():
-            path = base_dir / path
-    else:
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-        path = base_dir / f"{prefix}_{timestamp}.png"
-
-    path = path.with_suffix(".png")
+    path = _resolve_figure_path(filename, prefix, workspace_dir=workspace_dir, extension="png")
 
     write_kwargs = {}
     if width is not None:
@@ -277,6 +314,45 @@ def _save_figure(
             )
             return None
         warnings.warn(f"Figure export skipped due to unexpected error: {message}", RuntimeWarning)
+        return None
+
+    return path
+
+
+def _save_figure_html(
+    fig: go.Figure,
+    filename: Optional[str],
+    prefix: str,
+    *,
+    workspace_dir: Optional[Union[str, Path]] = None,
+    include_plotlyjs: Union[bool, str] = "cdn",
+    full_html: bool = True,
+    config: Optional[dict] = None,
+    default_width: Optional[int] = None,
+    default_height: Optional[int] = None,
+) -> Optional[Path]:
+    """Persist ``fig`` as an interactive HTML file and return the path."""
+
+    if fig is None:
+        return None
+
+    path = _resolve_figure_path(filename, prefix, workspace_dir=workspace_dir, extension="html")
+
+    fig_to_save = go.Figure(fig)
+    try:
+        fig_to_save.write_html(
+            str(path),
+            include_plotlyjs=include_plotlyjs,
+            full_html=full_html,
+            config=config,
+            default_width=default_width,
+            default_height=default_height,
+        )
+    except Exception as exc:  # pragma: no cover - runtime dependent
+        warnings.warn(
+            f"Figure HTML export skipped due to unexpected error: {exc}",
+            RuntimeWarning,
+        )
         return None
 
     return path
@@ -384,6 +460,64 @@ def _to_datetime_list(values) -> list:
     return normalized
 
 
+def figure_export_kwargs(
+    name: Optional[Union[str, Path]] = None,
+    *,
+    fmt: Optional[str] = "png",
+    workspace_dir: Optional[Union[str, Path]] = None,
+) -> dict:
+    """Return keyword arguments for scatter/timeseries helpers to export figures.
+
+    Parameters
+    ----------
+    name : str or path-like, optional
+        Base filename (without extension) for the figure. ``None`` delegates to
+        the plotting helper's default timestamped filename.
+    fmt : {"png", "html"}, optional
+        Output format. ``"png"`` triggers the static export, ``"html"`` produces
+        an interactive Plotly HTML bundle.
+    workspace_dir : path-like, optional
+        Root directory that contains the ``figures`` subfolder. Defaults to the
+        same location used by :func:`plot_scatter` and :func:`plot_timeseries`
+        (``~/.nitropulse/figures``) when omitted.
+    """
+
+    fmt_normalized = (fmt or "png").lower()
+    if fmt_normalized not in {"png", "html"}:
+        raise ValueError("fmt must be 'png' or 'html'.")
+
+    export_name: Optional[str]
+    if name is None:
+        export_name = None
+    else:
+        export_name = Path(name).stem if str(name).strip() else None
+
+    kwargs: dict = {"workspace_dir": workspace_dir}
+    if fmt_normalized == "html":
+        html_payload: dict[str, Optional[Union[str, bool]]] = {"include_plotlyjs": "cdn"}
+        if export_name:
+            html_payload["name"] = export_name
+        kwargs["save_html"] = html_payload
+    else:
+        kwargs["save"] = export_name if export_name else True
+    return kwargs
+
+
+def figure_output_path(
+    name: Optional[Union[str, Path]] = None,
+    *,
+    fmt: Optional[str] = "png",
+    workspace_dir: Optional[Union[str, Path]] = None,
+    prefix: str = "figure",
+) -> Path:
+    """Compute the resolved filesystem path for a figure export."""
+
+    fmt_normalized = (fmt or "png").lower()
+    extension = "html" if fmt_normalized == "html" else "png"
+    filename = Path(name).stem if name else None
+    return _resolve_figure_path(filename, prefix, workspace_dir=workspace_dir, extension=extension)
+
+
 def plot_scatter(
     obs_df: pd.DataFrame,
     holdout_df: pd.DataFrame,
@@ -396,7 +530,9 @@ def plot_scatter(
     year_col: str = "year",
     crop_col: str = "lc",
     group_cols: Optional[Iterable[str]] = None,
+    title_text: Optional[str] = None,
     save: Union[bool, str] = False,
+    save_html: Union[bool, str, dict] = False,
     save_width: Optional[int] = None,
     save_height: Optional[int] = None,
     workspace_dir: Optional[Union[str, Path]] = None,
@@ -443,27 +579,62 @@ def plot_scatter(
 
     pred_col = f"{target}_pred"
 
-    if group_cols is None:
-        group_cols = []
-        potential = [
-            (station_col, station),
-            (year_col, year),
-            (crop_col, crop),
-        ]
-        for col, value in potential:
-            if col not in subset:
-                continue
-            unique_vals = subset[col].dropna().unique()
-            values = _as_list(value)
-            if values is None:
-                if len(unique_vals) > 1:
-                    group_cols.append(col)
-            else:
-                if len(set(unique_vals)) > 1:
-                    group_cols.append(col)
+    def _single_value_from_filter(value):
+        values = _as_list(value)
+        if not values:
+            return None
+        cleaned = []
+        for item in values:
+            try:
+                if pd.isna(item):
+                    continue
+            except Exception:
+                pass
+            cleaned.append(item)
+        if not cleaned:
+            return None
+        deduped = list(dict.fromkeys(cleaned))
+        return deduped[0] if len(deduped) == 1 else None
 
-    # Ensure group columns are unique and present
-    group_cols = [c for c in dict.fromkeys(group_cols) if c in subset.columns]
+    def _normalize_label_value(value):
+        if value is None:
+            return None
+        try:
+            if pd.isna(value):
+                return None
+        except Exception:
+            pass
+        if isinstance(value, (np.integer, np.int64, np.int32)):
+            return int(value)
+        if isinstance(value, (np.floating, float)):
+            if np.isnan(value):
+                return None
+            return int(value) if float(value).is_integer() else float(value)
+        return value
+
+    user_category_cols = group_cols
+    if user_category_cols is not None:
+        category_cols = [
+            col for col in dict.fromkeys(_as_list(user_category_cols) or []) if col in subset.columns
+        ]
+    else:
+        category_cols = []
+        if year_col in subset.columns:
+            category_cols.append(year_col)
+
+    if not category_cols and station_col in subset.columns:
+        category_cols.append(station_col)
+
+    # Ensure uniqueness while preserving order
+    category_cols = [c for c in dict.fromkeys(category_cols) if c in subset.columns]
+
+    groupby_cols: list[str] = []
+    for col in category_cols:
+        if col in subset.columns and col not in groupby_cols:
+            groupby_cols.append(col)
+    for col in (station_col, year_col, crop_col):
+        if col in subset.columns and col not in groupby_cols:
+            groupby_cols.append(col)
 
     fig = go.Figure()
     seen_legend_groups: set[str] = set()
@@ -481,7 +652,7 @@ def plot_scatter(
         xy_min -= pad
         xy_max += pad
 
-    if not group_cols:
+    if not groupby_cols:
         metrics = _compute_metrics(subset[target], subset[pred_col])
         trace_name = (
             f"station={station or 'all'} | lc={crop or 'all'} | year={year or 'all'} (n={metrics.n}, r={metrics.r:.3f}, ubRMSE={metrics.ubrmse:.4f}, bias={metrics.bias:+.4f})"
@@ -496,58 +667,59 @@ def plot_scatter(
             )
         )
     else:
-        grouped = subset.groupby(group_cols, dropna=False)
+        grouped = subset.groupby(groupby_cols, dropna=False)
         palette = _get_palette(len(grouped))
         for idx, (key, group) in enumerate(grouped):
             metrics = _compute_metrics(group[target], group[pred_col])
             if isinstance(key, tuple):
-                key_map = {col: val for col, val in zip(group_cols, key)}
+                key_map = {col: val for col, val in zip(groupby_cols, key)}
             else:
-                key_map = {group_cols[0]: key}
+                key_map = {groupby_cols[0]: key}
 
-            station_label = key_map.get(station_col)
-            if station_label is None and station is not None:
-                station_vals = _as_list(station)
-                if station_vals and len(set(station_vals)) == 1:
-                    station_label = station_vals[0]
+            station_label = _normalize_label_value(key_map.get(station_col))
             if station_label is None:
-                station_label = "station"
+                station_label = _normalize_label_value(_single_value_from_filter(station))
 
-            crop_label = key_map.get(crop_col)
-            if crop_label is None and crop is not None:
-                crop_vals = _as_list(crop)
-                if crop_vals and len(set(crop_vals)) == 1:
-                    crop_label = crop_vals[0]
+            crop_label = _normalize_label_value(key_map.get(crop_col))
             if crop_label is None:
-                crop_label = "crop"
+                crop_label = _normalize_label_value(_single_value_from_filter(crop))
 
-            year_label = key_map.get(year_col)
-            if year_label is None and year is not None:
-                year_vals = _as_list(year)
-                if year_vals and len(set(year_vals)) == 1:
-                    year_label = year_vals[0]
+            year_label = _normalize_label_value(key_map.get(year_col))
             if year_label is None:
-                year_label = "year"
+                year_label = _normalize_label_value(_single_value_from_filter(year))
+
             legend_group_parts: list[str] = []
-            legend_group_title = None
-            if crop_label != "crop":
-                legend_group_parts.append(str(crop_label))
-            if year_label != "year":
-                legend_group_parts.append(str(year_label))
+            for col in category_cols:
+                col_value = _normalize_label_value(key_map.get(col))
+                if col == station_col and col_value is None:
+                    col_value = station_label
+                elif col == crop_col and col_value is None:
+                    col_value = crop_label
+                elif col == year_col and col_value is None:
+                    col_value = year_label
+                if col_value is None:
+                    continue
+                legend_group_parts.append(str(col_value))
             legend_group = " | ".join(legend_group_parts) if legend_group_parts else None
+            legend_group_title = None
             if legend_group and legend_group not in seen_legend_groups:
                 legend_group_title = legend_group
                 seen_legend_groups.add(legend_group)
 
             name_parts: list[str] = []
-            if station_label != "station":
+            if station_label is not None:
                 name_parts.append(str(station_label))
-            if not legend_group:
-                if crop_label != "crop":
-                    name_parts.append(str(crop_label))
-                if year_label != "year":
-                    name_parts.append(str(year_label))
-            prefix = " | ".join(name_parts) if name_parts else "All"
+            include_crop_in_name = crop_label is not None and crop_col not in category_cols
+            if include_crop_in_name:
+                name_parts.append(str(crop_label))
+
+            show_year_in_name = year_label is not None and year_col not in category_cols
+            prefix = " | ".join(name_parts)
+            if show_year_in_name:
+                prefix = f"{prefix} | {year_label}" if prefix else str(year_label)
+            if not prefix:
+                prefix = "All"
+
             label = (
                 f"{prefix} (n={metrics.n}, r={metrics.r:.3f}, ubRMSE={metrics.ubrmse:.4f}, bias={metrics.bias:+.4f})"
             )
@@ -559,7 +731,11 @@ def plot_scatter(
                     marker=dict(color=palette[idx], size=7, opacity=0.85),
                     name=label,
                     legendgroup=legend_group,
-                    legendgrouptitle=dict(text=legend_group_title) if legend_group_title else None,
+                    legendgrouptitle=(
+                        dict(text=_bold_text(legend_group_title), font=LEGEND_FONT)
+                        if legend_group_title
+                        else None
+                    ),
                 )
             )
         # 1:1 reference line
@@ -589,9 +765,11 @@ def plot_scatter(
         )
 
     fig.update_layout(
-        title=None,
-        xaxis_title="Observed SSM (m³/m³)",
-        yaxis_title="Predicted SSM (m³/m³)",
+        title=(
+            dict(text=_bold_text(title_text), font=TITLE_FONT, x=0.5, xanchor="center")
+            if title_text
+            else None
+        ),
         template="plotly_white",
         legend=dict(
             orientation="v",
@@ -602,15 +780,28 @@ def plot_scatter(
             traceorder="grouped",
             tracegroupgap=4,
             itemsizing="constant",
-            font=dict(size=12),
+            font=LEGEND_FONT,
+            title=dict(font=LEGEND_FONT),
         ),
         margin=dict(l=70, r=320, t=70, b=70),
         width=1200,
         height=720,
+        font=dict(size=TICK_FONT_SIZE, family=FONT_FAMILY_BASE),
     )
 
-    fig.update_xaxes(range=[xy_min, xy_max], constrain="domain")
-    fig.update_yaxes(range=[xy_min, xy_max], scaleanchor="x", scaleratio=1)
+    fig.update_xaxes(
+        range=[xy_min, xy_max],
+        constrain="domain",
+        title=dict(text=_bold_text("Observed SSM (m³/m³)"), font=AXIS_TITLE_FONT),
+        tickfont=TICK_FONT,
+    )
+    fig.update_yaxes(
+        range=[xy_min, xy_max],
+        scaleanchor="x",
+        scaleratio=1,
+        title=dict(text=_bold_text("Predicted SSM (m³/m³)"), font=AXIS_TITLE_FONT),
+        tickfont=TICK_FONT,
+    )
 
     _ensure_vertical_legend_fit(fig)
 
@@ -631,6 +822,36 @@ def plot_scatter(
             height=export_height,
         )
 
+    if save_html:
+        html_name: Optional[str] = None
+        include_js = "cdn"
+        html_full = True
+        html_config = None
+        default_width = None
+        default_height = None
+
+        if isinstance(save_html, dict):
+            html_name = save_html.get("name") or save_html.get("filename")
+            include_js = save_html.get("include_plotlyjs", include_js)
+            html_full = save_html.get("full_html", html_full)
+            html_config = save_html.get("config", html_config)
+            default_width = save_html.get("default_width")
+            default_height = save_html.get("default_height")
+        elif isinstance(save_html, str):
+            html_name = save_html
+
+        _save_figure_html(
+            fig,
+            html_name,
+            "scatter",
+            workspace_dir=workspace_dir,
+            include_plotlyjs=include_js,
+            full_html=html_full,
+            config=html_config,
+            default_width=default_width,
+            default_height=default_height,
+        )
+
     return fig
 
 
@@ -644,6 +865,7 @@ def plot_timeseries(
     target: str = "ssm",
     target_label: Optional[str] = None,
     save: Union[bool, str] = False,
+    save_html: Union[bool, str, dict] = False,
     save_width: Optional[int] = None,
     save_height: Optional[int] = None,
     workspace_dir: Optional[Union[str, Path]] = None,
@@ -1020,7 +1242,11 @@ def plot_timeseries(
                         name=name_obs,
                         showlegend=showlegend_obs,
                         legendgroup=legend_group_value_obs,
-                        legendgrouptitle=dict(text=legend_title_obs) if legend_title_obs else None,
+                        legendgrouptitle=(
+                            dict(text=_bold_text(legend_title_obs), font=LEGEND_FONT)
+                            if legend_title_obs
+                            else None
+                        ),
                     )
                     fig.add_trace(trace_obs, row=row, col=1, secondary_y=False)
 
@@ -1062,7 +1288,11 @@ def plot_timeseries(
                             name=name_pred,
                             showlegend=showlegend_pred,
                             legendgroup=legend_group_value_pred,
-                            legendgrouptitle=dict(text=legend_title_pred) if legend_title_pred else None,
+                                legendgrouptitle=(
+                                    dict(text=_bold_text(legend_title_pred), font=LEGEND_FONT)
+                                    if legend_title_pred
+                                    else None
+                                ),
                         )
                         fig.add_trace(trace_pred, row=row, col=1, secondary_y=False)
 
@@ -1108,7 +1338,11 @@ def plot_timeseries(
                                 opacity=precip_opacity,
                                 showlegend=True,
                                 legendgroup=legend_group_value_precip,
-                                legendgrouptitle=dict(text=legend_title_precip) if legend_title_precip else None,
+                                legendgrouptitle=(
+                                    dict(text=_bold_text(legend_title_precip), font=LEGEND_FONT)
+                                    if legend_title_precip
+                                    else None
+                                ),
                             )
                             fig.add_trace(trace_precip, row=row, col=1, secondary_y=True)
                             precip_added = True
@@ -1145,7 +1379,8 @@ def plot_timeseries(
         traceorder="grouped",
         tracegroupgap=4,
         itemsizing="constant",
-        font=dict(size=12),
+        font=dict(size=LABEL_FONT_SIZE, family=FONT_FAMILY_BOLD),
+        title=dict(font=dict(size=LABEL_FONT_SIZE, family=FONT_FAMILY_BOLD)),
     )
 
     def _legend_size() -> tuple[int, int]:
@@ -1164,13 +1399,24 @@ def plot_timeseries(
     if multirow:
         margin = dict(l=110, r=max(240, 60 + legend_width // 2), t=120, b=130)
         height = max(280 * row_count + 170, legend_height + 100)
-        yaxis_config = dict(title=None)
+        yaxis_config = dict(title=None, tickfont=TICK_FONT)
     else:
         margin = dict(l=60, r=max(240, legend_width + 80), t=80, b=60)
         height = max(360 * row_count, legend_height + 120)
-        yaxis_config = dict(title=display_target)
+        yaxis_config = dict(
+            title=(
+                dict(text=_bold_text(display_target), font=AXIS_TITLE_FONT)
+                if display_target
+                else None
+            ),
+            tickfont=TICK_FONT,
+        )
 
-    layout_title = (dict(text=title_text, x=0.5, xanchor="center") if title_text else None)
+    layout_title = (
+        dict(text=_bold_text(title_text), font=TITLE_FONT, x=0.5, xanchor="center")
+        if title_text
+        else None
+    )
 
     fig.update_layout(
         template="plotly_white",
@@ -1179,28 +1425,28 @@ def plot_timeseries(
         legend=legend_config,
         margin=margin,
         height=height,
-        font=dict(size=12),
+        font=dict(size=TICK_FONT_SIZE, family=FONT_FAMILY_BASE),
     )
 
     if multirow:
         for idx in range(1, row_count + 1):
             fig.update_yaxes(
-                title=dict(text=y_axis_label_left, font=dict(size=13)),
-                tickfont=dict(size=11),
+                title=dict(text=_bold_text(y_axis_label_left), font=AXIS_TITLE_FONT),
+                tickfont=TICK_FONT,
                 row=idx,
                 col=1,
             )
             fig.update_yaxes(
-                title=dict(text=y_axis_label_right, font=dict(size=13)),
-                tickfont=dict(size=11),
+                title=dict(text=_bold_text(y_axis_label_right), font=AXIS_TITLE_FONT),
+                tickfont=TICK_FONT,
                 row=idx,
                 col=1,
                 secondary_y=True,
             )
         for idx in range(1, row_count + 1):
             fig.update_xaxes(
-                title=dict(text=x_axis_label, font=dict(size=13)),
-                tickfont=dict(size=11),
+                title=dict(text=_bold_text(x_axis_label), font=AXIS_TITLE_FONT),
+                tickfont=TICK_FONT,
                 tickformat=DATE_TICKFORMAT,
                 rangeslider=dict(visible=False),
                 ticklabelmode="period",
@@ -1210,8 +1456,8 @@ def plot_timeseries(
             )
     else:
         fig.update_xaxes(
-            title=dict(text="Date", font=dict(size=13)),
-            tickfont=dict(size=11),
+            title=dict(text=_bold_text("Date"), font=AXIS_TITLE_FONT),
+            tickfont=TICK_FONT,
             tickformat=DATE_TICKFORMAT,
             rangeslider=dict(visible=False),
             ticklabelmode="period",
@@ -1239,13 +1485,13 @@ def plot_timeseries(
                     secondary_y=True,
                 )
         fig.update_yaxes(
-            title=dict(text="Precipitation (mm/day)", font=dict(size=13)),
-            tickfont=dict(size=11),
+            title=dict(text=_bold_text("Precipitation (mm/day)"), font=AXIS_TITLE_FONT),
+            tickfont=TICK_FONT,
             secondary_y=True,
         )
         fig.update_yaxes(
-            title=dict(text="Soil Moisture (m³/m³)", font=dict(size=13)),
-            tickfont=dict(size=11),
+            title=dict(text=_bold_text("Soil Moisture (m³/m³)"), font=AXIS_TITLE_FONT),
+            tickfont=TICK_FONT,
             secondary_y=False,
         )
 
@@ -1268,6 +1514,35 @@ def plot_timeseries(
             height=export_height,
         )
 
+    if save_html:
+        html_name: Optional[str] = None
+        include_js = "cdn"
+        html_full = True
+        html_config = None
+        default_width = None
+        default_height = None
+
+        if isinstance(save_html, dict):
+            html_name = save_html.get("name") or save_html.get("filename")
+            include_js = save_html.get("include_plotlyjs", include_js)
+            html_full = save_html.get("full_html", html_full)
+            html_config = save_html.get("config", html_config)
+            default_width = save_html.get("default_width")
+            default_height = save_html.get("default_height")
+        elif isinstance(save_html, str):
+            html_name = save_html
+        _save_figure_html(
+            fig,
+            html_name,
+            "timeseries",
+            workspace_dir=workspace_dir,
+            include_plotlyjs=include_js,
+            full_html=html_full,
+            config=html_config,
+            default_width=default_width,
+            default_height=default_height,
+        )
+
     return fig
 
 
@@ -1279,7 +1554,9 @@ def create_scatter_plot(
     year: Optional[Iterable[int] | int] = None,
     crop: Optional[Iterable[str] | str] = None,
     target: str = "ssm",
+    title_text: Optional[str] = None,
     save: Union[bool, str] = False,
+    save_html: Union[bool, str, dict] = False,
     save_width: Optional[int] = None,
     save_height: Optional[int] = None,
     workspace_dir: Optional[Union[str, Path]] = None,
@@ -1293,7 +1570,9 @@ def create_scatter_plot(
         year=year,
         crop=crop,
         target=target,
+        title_text=title_text,
         save=save,
+        save_html=save_html,
         save_width=save_width,
         save_height=save_height,
         workspace_dir=workspace_dir,
@@ -1311,6 +1590,7 @@ def create_timeseries_plot(
     target: str = "ssm",
     target_label: Optional[str] = None,
     save: Union[bool, str] = False,
+    save_html: Union[bool, str] = False,
     save_width: Optional[int] = None,
     save_height: Optional[int] = None,
     workspace_dir: Optional[Union[str, Path]] = None,
@@ -1341,6 +1621,7 @@ def create_timeseries_plot(
         target=target,
         target_label=target_label,
         save=save,
+        save_html=save_html,
         save_width=save_width,
         save_height=save_height,
         workspace_dir=workspace_dir,
