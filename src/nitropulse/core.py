@@ -95,13 +95,25 @@ def run_inversion(args):
     import pandas as pd
     pheno_df = pd.read_csv(pheno_df_path)
 
-    inv = Inverse(args.workspace_dir, fGHz=args.fghz, models=models_dict, acftype=args.acftype)
+    inv_config = {
+        'fGHz': args.fghz,
+        'models': models_dict,
+        'acftype': args.acftype,
+        'iterations': getattr(args, 'iterations', 1),
+    }
 
-    inv_df = inv.run(pheno_df)
+    inv = Inverse(args.workspace_dir, inv_config)
+
+    inv_df = inv.run(pheno_df, iterations=inv_config['iterations'])
 
     output_file = os.path.join(args.workspace_dir, 'outputs', 'inv_df.csv')
     print(f"💾 Saving inversion results to {output_file}.")
     inv_df.to_csv(output_file, index=False)
+
+    if inv.last_checkpoint_manifest_path:
+        print(f"📌 Latest inversion checkpoint manifest: {inv.last_checkpoint_manifest_path}")
+    elif inv.last_checkpoint_path:
+        print(f"📌 Latest inversion checkpoint: {inv.last_checkpoint_path}")
     print("✅ Inversion completed!")
 
 
@@ -239,7 +251,7 @@ def main():
                       'RISMA_MB16', 'RISMA_MB17', 'RISMA_MB18', 'RISMA_MB19', 'RISMA_MB20',
                       'RISMA_MB21', 'RISMA_MB22', 'RISMA_MB23', 'RISMA_MB24', 'RISMA_MB25',
                       'RISMA_MB26', 'RISMA_SK1', 'RISMA_SK2', 'RISMA_SK3', 'RISMA_SK4']
-    default_models_str = '{"RT_s": "PRISM1", "RT_c": "Diff"}'
+    default_models_str = '{"RT_s": "SPM3D", "RT_c": "Diff"}'
 
     # Parent parser for common arguments
     parent_parser = argparse.ArgumentParser(add_help=False)
@@ -271,6 +283,7 @@ def main():
     parser_inversion.add_argument('--fghz', type=float, default=5.4, help='Frequency in GHz for inversion.\n(default: 5.4)')
     parser_inversion.add_argument('--models', default=default_models_str, help=f'RT models in JSON format.\n(default: \'{default_models_str}\')')
     parser_inversion.add_argument('--acftype', default='exp', help='ACF type for AIEM model.\n(default: exp)')
+    parser_inversion.add_argument('--iterations', type=int, default=1, help='Number of inversion iterations to perform.\n(default: 1)')
     parser_inversion.set_defaults(func=inversion_command)
 
     # --- Modeling command ---
@@ -294,6 +307,7 @@ def main():
     parser_run.add_argument('--fghz', type=float, default=5.4, help='Frequency in GHz for inversion.\n(default: 5.4)')
     parser_run.add_argument('--models', default=default_models_str, help=f'RT models in JSON format.\n(default: \'{default_models_str}\')')
     parser_run.add_argument('--acftype', default='exp', help='ACF type for AIEM model.\n(default: exp)')
+    parser_run.add_argument('--iterations', type=int, default=1, help='Number of inversion iterations to perform.\n(default: 1)')
     parser_run.add_argument('--features', nargs='+', default=['SSM', 'vvs', 's'], help="Feature list for ML models.\n(default: 'SSM' 'vvs' 's')")
     parser_run.add_argument('--gee-project-id', required=True, help='(Required) Google Earth Engine project ID.')
     parser_run.set_defaults(func=run_full_workflow)

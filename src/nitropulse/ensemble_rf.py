@@ -7,11 +7,13 @@ import re
 import csv
 import os
 import uuid
+import json
 import geemap
 import numpy as np
 from geemap import ml
 from tqdm.auto import tqdm
 import pandas as pd
+from copy import deepcopy
 
 
 class RegressionRF:
@@ -39,6 +41,7 @@ class RegressionRF:
         self._trained_feature_map = {}
         self._holdout_by_year = False
         self._test_year_map = None
+        self._latest_inversion_checkpoint = self._load_latest_inversion_checkpoint()
     
 
     def run(self, vars, n_estimators=15, random_state=42, max_depth=15, holdout_by_year=True):
@@ -48,9 +51,20 @@ class RegressionRF:
             self._init_holdout_years(random_state)
         else:
             self._test_year_map = None
+
+        checkpoint_info = self.latest_inversion_checkpoint
+        if checkpoint_info:
+            path_hint = checkpoint_info.get('checkpoint_path') or checkpoint_info.get('manifest_path')
+            iteration = checkpoint_info.get('iteration')
+            tqdm.write(
+                f"Using inversion checkpoint (iteration {iteration}): {path_hint}"
+            )
         for var in tqdm(vars, desc="Training ensemble models"):
             model = RandomForestRegressor(n_estimators=n_estimators, random_state=random_state, max_depth=max_depth)
-            trained_models[var] = self.__train(model, var)
+            payload = self.__train(model, var)
+            if checkpoint_info:
+                payload['inversion_checkpoint'] = deepcopy(checkpoint_info)
+            trained_models[var] = payload
             
         return trained_models
     
@@ -94,6 +108,18 @@ class RegressionRF:
 
         X = self.df[features]
         y = self.df[var_lower]
+        
+        # Filter out rows with NaN values in features or target
+        valid_mask = ~(X.isna().any(axis=1) | y.isna())
+        
+        if len(valid_mask) == 0 or valid_mask.sum() == 0:
+            raise ValueError(f"No valid (non-NaN) samples found for variable '{var}' after filtering.")
+        
+        tqdm.write(f"Using {valid_mask.sum()} valid samples (filtered {(~valid_mask).sum()} rows with NaN values)")
+        
+        # Apply the valid mask to get clean data
+        X_clean = X[valid_mask]
+        y_clean = y[valid_mask]
 
         if self._holdout_by_year:
             if self._test_year_map is None:
@@ -102,18 +128,20 @@ class RegressionRF:
             if 'station' not in self.df.columns or 'year' not in self.df.columns:
                 raise KeyError("Columns 'station' and 'year' are required for year-based holdout splits.")
 
-            test_years = self.df['station'].map(self._test_year_map)
-            test_mask = test_years.eq(self.df['year']).fillna(False)
+            # Apply valid mask to the full dataframe for holdout logic
+            df_clean = self.df[valid_mask]
+            test_years = df_clean['station'].map(self._test_year_map)
+            test_mask = test_years.eq(df_clean['year']).fillna(False)
 
-            X_train, X_test = X[~test_mask], X[test_mask]
-            y_train, y_test = y[~test_mask], y[test_mask]
+            X_train, X_test = X_clean[~test_mask], X_clean[test_mask]
+            y_train, y_test = y_clean[~test_mask], y_clean[test_mask]
 
             if X_train.empty or X_test.empty:
                 raise ValueError("Year-based holdout produced an empty train/test split. Check station/year coverage.")
 
             return X_train, X_test, y_train, y_test
 
-        return train_test_split(X, y, test_size=test_size, random_state=random_state)
+        return train_test_split(X_clean, y_clean, test_size=test_size, random_state=random_state)
     
     def __train(self, model, var):
         """
@@ -180,6 +208,30 @@ class RegressionRF:
     def __clean_tree(self, tree):
         return re.sub(r'\s+', ' ', tree)  # Replace multiple spaces with a single space
 
+    @property
+    def latest_inversion_checkpoint(self):
+        if self._latest_inversion_checkpoint is None:
+            return None
+        return deepcopy(self._latest_inversion_checkpoint)
+
+    def _load_latest_inversion_checkpoint(self):
+        candidate_paths = [
+            os.path.join(self.workspace_dir, 'inversion_checkpoints', 'latest.json'),
+            os.path.join(self.workspace_dir, 'outputs', 'last_inversion_checkpoint.json'),
+        ]
+        for path in candidate_paths:
+            if not os.path.exists(path):
+                continue
+            try:
+                with open(path, 'r') as f:
+                    data = json.load(f)
+            except (OSError, json.JSONDecodeError):
+                continue
+            if isinstance(data, dict):
+                data.setdefault('_source', path)
+                return data
+        return None
+
     def _init_holdout_years(self, random_state):
         if 'station' not in self.df.columns or 'year' not in self.df.columns:
             raise KeyError("Columns 'station' and 'year' are required for year-based holdout splits.")
@@ -245,6 +297,7 @@ class RegressionRF:
         asset_root = f"projects/{gee_project_id}/assets"
 
         for var, model in tqdm(tranied_rfs.items(), desc="Uploading models to GEE"):
+            model = model['model']
             n_estimators = model.n_estimators
             mdepth = model.max_depth
             backscatter_tag = self.__resolve_backscatter_tag(rt_models)
