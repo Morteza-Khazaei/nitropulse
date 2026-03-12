@@ -152,7 +152,7 @@ nitropulse run \
 
 ### Using Jupyter Notebooks
 
-For a detailed, interactive walkthrough of each stage, refer to the [notebooks/instruction.md](notebooks/instruction.md) guide. The notebooks are organized sequentially:
+For a detailed, interactive walkthrough of each stage, refer to the [notebooks/README.md](notebooks/README.md) guide. The notebooks are organized sequentially:
 
 1.  **[01a_download_risma.ipynb](notebooks/01a_download_risma.ipynb)**: RISMA data acquisition.
 2.  **[01b_download_s1.ipynb](notebooks/01b_download_s1.ipynb)**: Sentinel-1 GEE extraction.
