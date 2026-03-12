@@ -25,9 +25,9 @@ FIGURE_SUBDIR = "figures"
 
 FONT_FAMILY_BASE = "DejaVu Sans, Helvetica, Arial, sans-serif"
 FONT_FAMILY_BOLD = "DejaVu Sans Bold, DejaVu Sans, Helvetica, Arial, sans-serif"
-LABEL_FONT_SIZE = 14
-TICK_FONT_SIZE = 12
-TITLE_FONT_SIZE = 18
+LABEL_FONT_SIZE = 18
+TICK_FONT_SIZE = 16
+TITLE_FONT_SIZE = 20
 
 LEGEND_FONT = dict(size=LABEL_FONT_SIZE, family=FONT_FAMILY_BOLD)
 AXIS_TITLE_FONT = dict(size=LABEL_FONT_SIZE, family=FONT_FAMILY_BOLD)
@@ -284,12 +284,12 @@ def _save_figure(
     width: Optional[int] = None,
     height: Optional[int] = None,
 ) -> Optional[Path]:
-    """Persist ``fig`` as a PNG within ``<workspace>/figures`` and return the path."""
+    """Persist ``fig`` as an SVG within ``<workspace>/figures`` and return the path."""
 
     if fig is None:
         return None
 
-    path = _resolve_figure_path(filename, prefix, workspace_dir=workspace_dir, extension="png")
+    path = _resolve_figure_path(filename, prefix, workspace_dir=workspace_dir, extension="svg")
 
     write_kwargs = {}
     if width is not None:
@@ -309,7 +309,7 @@ def _save_figure(
         if "Chrome" in message or "kaleido" in message.lower() or "Browser" in message:
             warnings.warn(
                 "Figure export skipped: Plotly's Kaleido engine (with Chrome dependencies) "
-                "is not available. Install `kaleido` and run `plotly_get_chrome` to enable PNG saving.",
+                "is not available. Install `kaleido` and run `plotly_get_chrome` to enable SVG saving.",
                 RuntimeWarning,
             )
             return None

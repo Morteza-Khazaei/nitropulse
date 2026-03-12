@@ -41,3 +41,6 @@ venv/
 
 # Temporary workspace for local testing
 temp_workspace/
+
+# Flowcharts
+workflow/
